@@ -17,9 +17,9 @@ class NodeType(Enum):
 class Node(object):
 	def __init__(self, type):
 		self._sub = []
-		self._text = None
+		self._text = ''
 		self._type = type
-		self._class_ = None
+		self._class_ = ''
 		pass
 		
 	def add_sub( self, sub ):
@@ -101,7 +101,6 @@ class Source(object):
 	def to_match( self, re ):
 		m = re.search( self._text, self._at )
 		if m != None:
-			print ("!!!!", self._at, m.start())
 			text = self._text[self._at:m.start()]
 			self._at = m.end()
 			return m, text
