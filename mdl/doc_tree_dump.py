@@ -8,6 +8,8 @@ def get(node, indent = ''):
 		return get_section(node, indent)
 	if isinstance(node, doc_tree.Inline):
 		return get_inline(node, indent)
+	if isinstance(node, doc_tree.Link):
+		return get_link(node, indent)
 		
 	if isinstance(node, doc_tree.Block):
 		return get_block(node, indent)
@@ -54,3 +56,6 @@ def get_section(node, indent):
 	
 def get_inline(node, indent):
 	return '%{}/{}/'.format( node.feature.name, get_all_inline(node.sub) )
+
+def get_link(node, indent):
+	return '%link{{url={}}}/{}/'.format( node.url, get_all_inline(node.sub) )

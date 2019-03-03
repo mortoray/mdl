@@ -55,12 +55,15 @@ def _convert_inline( node ):
 		return doc_tree.Text( node.text )
 		
 	if node.type == tree_parser.NodeType.inline:
+		if node.class_ == '[':
+			return _convert_link( node )
+			
 		if node.class_ == '*':
 			feature = doc_tree.feature_bold
 		elif node.class_ == '_':
 			feature = doc_tree.feature_italic
 		else:
-			raise Exception("Unknown feature")
+			raise Exception("Unknown feature", node.class_)
 			
 		block = doc_tree.Inline(feature)
 		for sub in node.iter_sub():
@@ -70,4 +73,22 @@ def _convert_inline( node ):
 		
 	raise Exception("Unexpected node type" )
 
+def _collapse_text( node ):
+	#TODO: this is really rough for now
+	text = ''
+	for sub in node.iter_sub():
+		text += sub.text
+	return text
+
+
+def _convert_link( node ):
+	attrs = node.get_attrs()
+	url = _collapse_text( attrs[0] ) #TODO: proper iter
+	print("URL",url)
+
+	block = doc_tree.Link(url)
+	for sub in node.iter_sub():
+		block.sub.append( _convert_inline( sub ) )
+		
+	return block
 	

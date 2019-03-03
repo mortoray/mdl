@@ -82,6 +82,11 @@ class Node(object):
 	def iter_attr( self ):
 		return iter(self._attr)
 		
+	def get_attrs(self):
+		if self._attr == None:
+			return []
+		return self._attr
+		
 class Source(object):
 	def __init__(self, text):
 		#FEATURE: normalize text line-endings
