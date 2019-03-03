@@ -3,12 +3,14 @@ import re
 from enum import Enum
 
 class NodeType(Enum):
-	root = 1
-	line = 2
-	para = 3
+	# may contain blocks as children
+	container = 1
+	# may contain text and inline as children
+	block = 2
 	# text nodes may not have children
-	text = 4
-	text_feature = 5
+	text = 3
+	# may contain text and inline as children
+	inline = 4
 	
 class Node(object):
 	def __init__(self, type):
@@ -21,6 +23,11 @@ class Node(object):
 	def add_sub( self, sub ):
 		if self._type == NodeType.text:
 			raise Error( "The text type should not have children" )
+		if self._type == NodeType.container and sub._type != NodeType.block:
+			raise Error( "containers can only contain blocks" )
+		if self._type in [NodeType.block, NodeType.inline] and not sub._type in [NodeType.inline, NodeType.text]:
+			raise Error( "blocks/inlines can only contain inline/text" )
+			
 		assert isinstance(sub, Node)
 		self._sub.append( sub )
 		
@@ -99,7 +106,7 @@ def parse_file( filename ):
 	in_text = in_file.read()
 	in_source = Source(in_text)
 	
-	root = Node(NodeType.root)
+	root = Node(NodeType.container)
 	root.add_subs( _parse_blocks( in_source ) )
 	
 	return root
@@ -124,7 +131,7 @@ def _parse_blocks( src ):
 		
 		line_match = src.match( _syntax_line )
 		if line_match != None:
-			line = Node(NodeType.line)
+			line = Node(NodeType.block)
 			line.class_ = line_match.group(1)
 			line.add_subs( _parse_line(src) )
 			nodes.append( line )
@@ -171,7 +178,7 @@ def _parse_line( src, terminal = '\n' ):
 			feature_class = feature_match.group(1)
 			end_text()
 			feature_line = _parse_line( src, _syntax_feature_map[feature_class] )
-			feature = Node( NodeType.text_feature )
+			feature = Node( NodeType.inline )
 			feature.class_ = feature_class
 			feature.add_subs( feature_line )
 			bits.append( feature )
@@ -185,7 +192,7 @@ def _parse_line( src, terminal = '\n' ):
 
 
 def _parse_para( src ):
-	para = Node(NodeType.para)
+	para = Node(NodeType.block)
 	while not src.is_at_end():
 		line = _parse_line(src)
 		if len(line) == 0:
@@ -209,6 +216,4 @@ def dump( node, indent = '' ):
 	
 	for sub in node.iter_sub():
 		dump( sub, indent )
-
-
 	
