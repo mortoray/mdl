@@ -6,6 +6,7 @@ class NodeType(Enum):
 	root = 1
 	head = 2
 	para = 3
+	# text nodes may not have children
 	text = 4
 	text_feature = 5
 	
@@ -18,8 +19,11 @@ class Node(object):
 		pass
 		
 	def add_sub( self, sub ):
+		if self._type == NodeType.text:
+			raise Error( "The text type should not have children" )
 		assert isinstance(sub, Node)
 		self._sub.append( sub )
+		
 		
 	def add_subs( self, subs ):
 		for sub in subs:
@@ -30,6 +34,11 @@ class Node(object):
 		
 	def sub_is_empty( self ):
 		return len(self._sub) == 0
+		
+	def sub_last( self ):
+		if len(self._sub) > 0:
+			return self._sub[-1]
+		return None
 		
 	@property
 	def text(self):
@@ -157,6 +166,14 @@ def _parse_para( src ):
 		line = _parse_line(src)
 		if len(line) == 0:
 			break
+		
+		# Collapse consecutive text nodes
+		if len(line) > 0 and line[0].type == NodeType.text:
+			last = para.sub_last()
+			if last != None and last.type == NodeType.text:
+				last.text = last.text + ' ' + line[0].text
+				line = line[1:]
+		
 		para.add_subs( line )
 		
 	if para.sub_is_empty():
