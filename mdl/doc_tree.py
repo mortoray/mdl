@@ -16,9 +16,10 @@ class Text(object):
 	def __init__(self, text):
 		self.text = text
 		
-class Header(TextBlock):
-	def __init__(self, level):
+class Section(Block):
+	def __init__(self, level, title_text_block):
 		super().__init__()
+		self.title = title_text_block
 		self.level = level
 
 	

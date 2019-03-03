@@ -14,20 +14,30 @@ def convert( node ):
 def _convert_blocks( nodes_iter ):
 	out = []
 	
+	section_stack = []
 	cur_out = out
 	
 	for node in nodes_iter:
-		
-		if node.text == None or len(node.text) == 0:
-			cur_out.append( _convert_para(node) )
+
+		para = _convert_para(node)
+		if isinstance(para, Section):
+			while para.level <= len(section_stack):
+				_ = section_stack.pop()
+			
+			if len(section_stack) > 0:
+				cur_out = section_stack[-1].sub
+			
+			cur_out.append( para )
+			section_stack.push( para )
+			cur_out = para.sub
 		else:
-			pass
+			cur_out.append( para )
 			
 	return out
 
 def _convert_para( node ):
 	if node.class_.startswith( '#' ):
-		para = doc_tree.Header( len(node.class_) )
+		para = doc_tree.Section( len(node.class_) )
 	else:
 		para = doc_tree.Paragraph()
 	for sub in node.iter_sub():
