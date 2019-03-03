@@ -4,7 +4,7 @@ from enum import Enum
 
 class NodeType(Enum):
 	root = 1
-	head = 2
+	line = 2
 	para = 3
 	# text nodes may not have children
 	text = 4
@@ -104,7 +104,7 @@ def parse_file( filename ):
 	
 	return root
 
-_syntax_head = re.compile( '(#+|---)' )
+_syntax_line = re.compile( '(#+|---)' )
 _syntax_block = re.compile( '(>)' )
 
 # A feature may have any regex opening match, but requires a single character terminal
@@ -122,10 +122,10 @@ def _parse_blocks( src ):
 	while not src.is_at_end():
 		c = src.peek_char()
 		
-		head = src.match( _syntax_head )
-		if head != None:
-			line = Node(NodeType.head)
-			line.class_ = head.group(1)
+		line_match = src.match( _syntax_line )
+		if line_match != None:
+			line = Node(NodeType.line)
+			line.class_ = line_match.group(1)
 			line.add_subs( _parse_line(src) )
 			nodes.append( line )
 			continue
