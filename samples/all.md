@@ -3,7 +3,7 @@
 This is a 🐱 paragraph.
 It has two lines.
 
-This paragraph has just one line but a [link](structure) and [link *bold*](more).
+This paragraph has just one line but also a [link](structure) and with a [half-*bold* link](more).
 
 
 ## Sub-Heading with _italic_ bit

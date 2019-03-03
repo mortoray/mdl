@@ -54,8 +54,12 @@ def _convert_inline( node ):
 	if node.type == tree_parser.NodeType.text:
 		return doc_tree.Text( node.text )
 		
-	if node.type == tree_parse.NodeType.inline:
-		pass
+	if node.type == tree_parser.NodeType.inline:
+		block = doc_tree.Inline()
+		for sub in node.iter_sub():
+			block.sub.append( _convert_inline( sub ) )
+		
+		return block
 		
 	raise Exception("Unexpected node type" )
 

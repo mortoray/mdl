@@ -6,6 +6,8 @@ def dump(node, indent = ''):
 def get(node, indent = ''):
 	if isinstance(node, doc_tree.Section):
 		return get_section(node, indent)
+	if isinstance(node, doc_tree.Inline):
+		return get_inline(node, indent)
 		
 	if isinstance(node, doc_tree.Block):
 		return get_block(node, indent)
@@ -36,16 +38,17 @@ def get_block(node, indent):
 	
 def get_paragraph(node, indent):
 	txt = "{}<Paragraph>\n".format( indent )
+	indent += '\t'
 	for sub in node.sub:
-		txt += get(sub,indent + '\t')
-	txt += '\n'
+		txt += indent + get(sub) + '\n'
 	return txt
 	
 def get_text(node, indent):
-	return '{}{}'.format( indent, node.text )
+	return node.text
 	
 def get_section(node, indent):
 	return '{}<Section:{}> {}\n{}'.format( indent, node.level, 
 		get_all_inline(node.title), get_all(node.sub, indent + '\t') )
 	
-	
+def get_inline(node, indent):
+	return '{}'.format( get_all_inline(node.sub) )
