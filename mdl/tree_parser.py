@@ -20,6 +20,7 @@ class Node(object):
 		self._text = ''
 		self._type = type
 		self._class_ = ''
+		self._attr = None
 		pass
 		
 	def add_sub( self, sub ):
@@ -69,6 +70,17 @@ class Node(object):
 	@class_.setter
 	def class_( self, value ):
 		self._class_ = value
+		
+	def add_attr( self, node ):
+		if self._attr == None:
+			self._attr = []
+		self._attr.append(node)
+		
+	def has_attr( self ):
+		return self._attr != None and len(self._attr) > 0
+		
+	def iter_attr( self ):
+		return iter(self._attr)
 		
 class Source(object):
 	def __init__(self, text):
@@ -172,6 +184,22 @@ def _parse_blocks( src ):
 	return nodes
 	
 
+def _expand_false_node(node):
+	assert len(node.text) == 0
+	sub = []
+	
+	open_bit = Node( NodeType.text )
+	open_bit.text = node.class_
+	sub.append( open_bit )
+			
+	sub.extend( node.iter_sub() )
+	
+	close_bit = Node( NodeType.text )
+	close_bit.text = _syntax_feature_map[node.class_]
+	sub.append( close_bit )
+	return sub
+	
+	
 def _parse_line( src, terminal = '\n' ):
 	bits = []
 	text = ''
@@ -183,8 +211,38 @@ def _parse_line( src, terminal = '\n' ):
 		
 		n = Node(NodeType.text)
 		n.text = text
-		bits.append(n)
+		push_bit(n)
 		text = ''
+		
+	def push_bits(bits):
+		for bit in bits:
+			push_bit(bit)
+			
+	def push_bit(bit):
+		# check for compound bits
+		trail_bit = bit.type == NodeType.inline and bit.class_ == '('
+			
+		if len(bits) > 0 and bits[-1].type == NodeType.inline and bits[-1].class_ == '[' and not bits[-1].has_attr():
+			# not continued, then collapse the bit to normal text
+			# FEATURE: cleaner collapse
+			if trail_bit:
+				bits[-1].add_attr( bit )
+				return
+			else:
+				push_bits( _expand_false_node( bits.pop() ) )
+				
+		elif trail_bit:
+			push_bits( _expand_false_node( bit ) )
+			return
+			
+			
+		if bit.type == NodeType.text and len(bits) > 0 and bits[-1].type == NodeType.text:
+			bits[-1].text += bit.text
+		else:
+			bits.append(bit)
+		
+	def end_bits():
+		pass
 			
 	while not src.is_at_end():
 		c = src.peek_char()
@@ -205,13 +263,14 @@ def _parse_line( src, terminal = '\n' ):
 			feature = Node( NodeType.inline )
 			feature.class_ = feature_class
 			feature.add_subs( feature_line )
-			bits.append( feature )
+			push_bit( feature )
 			continue
 			
 			
 		text += src.next_char()
 			
 	end_text()
+	end_bits()
 	return bits
 
 
@@ -235,8 +294,27 @@ def _parse_para( src ):
 	
 # Rough debugging utility
 def dump( node, indent = '' ):
-	print( "{}({}/{}) {}".format( indent, node.type.name, node.class_, node.text ) )
+	print( _dump_get( node, indent ) )
+
+def _dump_get( node, indent = '' ):
+	text = indent
+	header = node.type.name
+	if len(node.class_) > 0:
+		header += '/' + node.class_
+	text += _bold(header)
+	text += ' ' + node.text
+	if node.has_attr():
+		text += '\n' + indent + '\tattrs\n'
+		for attr in node.iter_attr():
+			text += _dump_get( attr, indent + '\t\t' )
+	else:
+		text += '\n'
+				
 	indent += "\t"
-	
 	for sub in node.iter_sub():
-		dump( sub, indent )
+		text += _dump_get( sub, indent )
+
+	return text
+
+def _bold(text):
+	return '\x1b[1m{}\x1b[m'.format(text)
