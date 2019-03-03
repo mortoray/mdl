@@ -7,6 +7,7 @@ class NodeType(Enum):
 	head = 2
 	para = 3
 	text = 4
+	text_feature = 5
 	
 class Node(object):
 	def __init__(self, type):
@@ -118,22 +119,37 @@ def _parse_blocks( src ):
 	return nodes
 	
 
-def _parse_line( src ):
+def _parse_line( src, terminal = '\n' ):
+	bits = []
 	text = ''
+	
+	def end_text():
+		if len(text) == 0:
+			return
+		
+		n = Node(NodeType.text)
+		n.text = text
+		bits.append(n)
+			
 	while not src.is_at_end():
 		c = src.next_char()
-		if c == '\n':
+		if c == terminal:
 			break
-		else:
-			text += c
 			
-	#FEATURE: white space stripping and collapsing
-	if len(text) == 0:
-		return []
-	
-	n = Node(NodeType.text)
-	n.text = text
-	return [n]
+		if c == '*':
+			end_text()
+			bold = _parse_line( src, '*' )
+			feature = Node( NodeType.text_feature )
+			feature.class_ = '*'
+			feature.add_subs( bold )
+			bits.append( feature )
+			continue
+			
+		text += c
+			
+	end_text()
+	return bits
+
 
 def _parse_para( src ):
 	para = Node(NodeType.para)
@@ -150,7 +166,7 @@ def _parse_para( src ):
 	
 # Rough debugging utility
 def dump( node, indent = '' ):
-	print( "{}({}/{}) {}".format( indent, node.type, node.class_, node.text ) )
+	print( "{}({}/{}) {}".format( indent, node.type.name, node.class_, node.text ) )
 	indent += "\t"
 	
 	for sub in node.iter_sub():

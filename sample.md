@@ -5,5 +5,9 @@ It has two lines.
 
 This paragraph has just one line.
 
+
 ## Sub-Heading
+
+With *bold* text.
+
 
