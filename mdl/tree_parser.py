@@ -105,6 +105,13 @@ def parse_file( filename ):
 	return root
 
 _syntax_head = re.compile('(#+)')
+_syntax_feature = re.compile('([\*_\[\(])')
+_syntax_feature_map = {
+	'*': '*',
+	'_': '_',
+	'[': ']',
+	'(': ')',
+}
 
 def _parse_blocks( src ):
 	nodes = []
@@ -133,28 +140,34 @@ def _parse_line( src, terminal = '\n' ):
 	text = ''
 	
 	def end_text():
+		nonlocal text
 		if len(text) == 0:
 			return
 		
 		n = Node(NodeType.text)
 		n.text = text
 		bits.append(n)
+		text = ''
 			
 	while not src.is_at_end():
-		c = src.next_char()
+		c = src.peek_char()
 		if c == terminal:
+			_ = src.next_char()
 			break
 			
-		if c == '*':
+		feature_match = src.match( _syntax_feature )
+		if feature_match != None:
+			feature_class = feature_match.group(1)
 			end_text()
-			bold = _parse_line( src, '*' )
+			feature_line = _parse_line( src, _syntax_feature_map[feature_class] )
 			feature = Node( NodeType.text_feature )
-			feature.class_ = '*'
-			feature.add_subs( bold )
+			feature.class_ = feature_class
+			feature.add_subs( feature_line )
 			bits.append( feature )
 			continue
 			
-		text += c
+			
+		text += src.next_char()
 			
 	end_text()
 	return bits
