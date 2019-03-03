@@ -20,15 +20,17 @@ def _convert_blocks( nodes_iter ):
 	for node in nodes_iter:
 
 		para = _convert_para(node)
-		if isinstance(para, Section):
+		if isinstance(para, doc_tree.Section):
 			while para.level <= len(section_stack):
 				_ = section_stack.pop()
 			
 			if len(section_stack) > 0:
 				cur_out = section_stack[-1].sub
+			else:
+				cur_out = out
 			
 			cur_out.append( para )
-			section_stack.push( para )
+			section_stack.append( para )
 			cur_out = para.sub
 		else:
 			cur_out.append( para )
@@ -36,12 +38,15 @@ def _convert_blocks( nodes_iter ):
 	return out
 
 def _convert_para( node ):
+	para_subs = []
+	for sub in node.iter_sub():
+		para_subs.append( _convert_inline( sub ) )
+		
 	if node.class_.startswith( '#' ):
-		para = doc_tree.Section( len(node.class_) )
+		para = doc_tree.Section( len(node.class_), para_subs )
 	else:
 		para = doc_tree.Paragraph()
-	for sub in node.iter_sub():
-		para.sub.append( _convert_inline( sub ) )
+		para.sub = para_subs
 		
 	return para
 	
