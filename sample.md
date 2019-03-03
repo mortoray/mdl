@@ -10,4 +10,9 @@ This paragraph has just one line but a [link](structure).
 
 With *bold* text.
 
+> Quote
+block
 
+----- Invalid text, but parsed. (extra -'s should be allowed?)
+ 
+After separator.

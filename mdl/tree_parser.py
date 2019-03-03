@@ -104,7 +104,10 @@ def parse_file( filename ):
 	
 	return root
 
-_syntax_head = re.compile('(#+)')
+_syntax_head = re.compile( '(#+|---)' )
+_syntax_block = re.compile( '(>)' )
+
+# A feature may have any regex opening match, but requires a single character terminal
 _syntax_feature = re.compile('([\*_\[\(])')
 _syntax_feature_map = {
 	'*': '*',
@@ -121,16 +124,24 @@ def _parse_blocks( src ):
 		
 		head = src.match( _syntax_head )
 		if head != None:
-			_ = src.next_char()
-			
 			line = Node(NodeType.head)
 			line.class_ = head.group(1)
 			line.add_subs( _parse_line(src) )
 			nodes.append( line )
-		else:
+			continue
+			
+		block = src.match( _syntax_block )
+		if block != None:
 			para = _parse_para(src)
-			if para != None:
-				nodes.append( para )
+			para.class_ = block.group(1)
+			nodes.append( para )
+			continue
+			
+		
+		para = _parse_para(src)
+		# drop empty paragraphs
+		if not para.sub_is_empty():
+			nodes.append( para )
 			
 	return nodes
 	
@@ -188,9 +199,6 @@ def _parse_para( src ):
 				line = line[1:]
 		
 		para.add_subs( line )
-		
-	if para.sub_is_empty():
-		return None
 		
 	return para
 	
