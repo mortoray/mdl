@@ -17,8 +17,9 @@ class Text(object):
 		self.text = text
 		
 class Inline(InlineBlock):
-	def __init__(self):
+	def __init__(self, feature):
 		super().__init__()
+		self.feature = feature
 		
 class Section(Block):
 	def __init__(self, level, title_text_block):
@@ -26,4 +27,10 @@ class Section(Block):
 		self.title = title_text_block
 		self.level = level
 
-	
+
+class InlineFeature(object):
+	def __init__(self, name):
+		self.name = name
+		
+feature_bold = InlineFeature("bold")
+feature_italic = InlineFeature("italic")

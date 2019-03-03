@@ -55,7 +55,14 @@ def _convert_inline( node ):
 		return doc_tree.Text( node.text )
 		
 	if node.type == tree_parser.NodeType.inline:
-		block = doc_tree.Inline()
+		if node.class_ == '*':
+			feature = doc_tree.feature_bold
+		elif node.class_ == '_':
+			feature = doc_tree.feature_italic
+		else:
+			raise Exception("Unknown feature")
+			
+		block = doc_tree.Inline(feature)
 		for sub in node.iter_sub():
 			block.sub.append( _convert_inline( sub ) )
 		

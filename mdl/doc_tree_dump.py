@@ -39,8 +39,10 @@ def get_block(node, indent):
 def get_paragraph(node, indent):
 	txt = "{}<Paragraph>\n".format( indent )
 	indent += '\t'
+	txt += indent
 	for sub in node.sub:
-		txt += indent + get(sub) + '\n'
+		txt += get(sub)
+	txt += '\n'
 	return txt
 	
 def get_text(node, indent):
@@ -51,4 +53,4 @@ def get_section(node, indent):
 		get_all_inline(node.title), get_all(node.sub, indent + '\t') )
 	
 def get_inline(node, indent):
-	return '{}'.format( get_all_inline(node.sub) )
+	return '%{}/{}/'.format( node.feature.name, get_all_inline(node.sub) )
