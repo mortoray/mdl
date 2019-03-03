@@ -34,3 +34,9 @@ class InlineFeature(object):
 		
 feature_bold = InlineFeature("bold")
 feature_italic = InlineFeature("italic")
+
+class Link(InlineBlock):
+	def __init__(self, url):
+		super().__init__()
+		self.url = url
+		
