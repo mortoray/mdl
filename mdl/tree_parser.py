@@ -173,6 +173,11 @@ def _parse_line( src, terminal = '\n' ):
 			_ = src.next_char()
 			break
 			
+		if c == '\\':
+			_ = src.next_char()
+			text += src.next_char()
+			continue
+			
 		feature_match = src.match( _syntax_feature )
 		if feature_match != None:
 			feature_class = feature_match.group(1)

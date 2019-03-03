@@ -15,4 +15,4 @@ block
 
 ----- Invalid text, but parsed. (extra -'s should be allowed?)
  
-After separator.
+After separator. And with an \*escaped\* bit.
