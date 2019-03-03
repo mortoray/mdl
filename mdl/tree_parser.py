@@ -11,6 +11,8 @@ class NodeType(Enum):
 	text = 3
 	# may contain text and inline as children
 	inline = 4
+	# may not contain children, text is the raw text
+	raw = 5
 	
 class Node(object):
 	def __init__(self, type):
@@ -22,11 +24,11 @@ class Node(object):
 		
 	def add_sub( self, sub ):
 		if self._type == NodeType.text:
-			raise Error( "The text type should not have children" )
-		if self._type == NodeType.container and sub._type != NodeType.block:
-			raise Error( "containers can only contain blocks" )
+			raise Exception( "The text type should not have children" )
+		if self._type == NodeType.container and not sub._type in [NodeType.block, NodeType.raw]:
+			raise Exception( "containers can only contain blocks/raw" )
 		if self._type in [NodeType.block, NodeType.inline] and not sub._type in [NodeType.inline, NodeType.text]:
-			raise Error( "blocks/inlines can only contain inline/text" )
+			raise Exception( "blocks/inlines can only contain inline/text" )
 			
 		assert isinstance(sub, Node)
 		self._sub.append( sub )
@@ -96,6 +98,14 @@ class Source(object):
 			self._at = m.end()
 		return m
 		
+	def to_match( self, re ):
+		m = re.search( self._text, self._at )
+		if m != None:
+			print ("!!!!", self._at, m.start())
+			text = self._text[self._at:m.start()]
+			self._at = m.end()
+			return m, text
+		return None, None
 		
 		
 # Parses a file
@@ -113,6 +123,7 @@ def parse_file( filename ):
 
 _syntax_line = re.compile( '(#+|---)' )
 _syntax_block = re.compile( '(>)' )
+_syntax_raw = re.compile( '(```)' )
 
 # A feature may have any regex opening match, but requires a single character terminal
 _syntax_feature = re.compile('([\*_\[\(])')
@@ -144,7 +155,16 @@ def _parse_blocks( src ):
 			nodes.append( para )
 			continue
 			
-		
+		raw_match = src.match( _syntax_raw )
+		if raw_match != None:
+			raw = Node(NodeType.raw)
+			end_match, raw_text = src.to_match(_syntax_raw)
+			assert end_match != None
+			raw.text = raw_text
+			nodes.append( raw )
+			continue
+			
+			
 		para = _parse_para(src)
 		# drop empty paragraphs
 		if not para.sub_is_empty():
@@ -221,4 +241,3 @@ def dump( node, indent = '' ):
 	
 	for sub in node.iter_sub():
 		dump( sub, indent )
-	
