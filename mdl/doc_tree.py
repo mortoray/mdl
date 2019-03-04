@@ -1,13 +1,21 @@
 # Abstract document tree (the document equivalent of an abstract syntax tree)
 
+"""
+Base node types form the doc type tree. They should not be instantiated.
+"""
+
 class BaseBlock(object):
 	def __init__(self):
 		self.sub = []
 		
-class BaseInlineBlock(object):
+class BaseInlineBlock(BaseBlock):
 	def __init__(self):
 		super().__init__()
 		
+		
+"""
+Leaf types may only inherit from Base node types. This prevents collision on simple visitors, as well as keeping the "is-a" relationships clean.
+"""
 class Block(BaseBlock):
 	def __init__(self):
 		super().__init__()

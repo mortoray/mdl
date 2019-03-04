@@ -28,6 +28,7 @@ def _write_node( output, node ):
 		q( doc_tree.Section, _write_section ) or \
 		q( doc_tree.Block, _write_block ) or \
 		q( doc_tree.Text, _write_text ) or \
+		q( doc_tree.Link, _write_link ) or \
 		fail()
 
 		
@@ -42,7 +43,10 @@ def _write_list( output, list_ ):
 		_write_node( output, sub )
 	
 def _write_inline( output, node ):
-	pass
+	#TODO: map features, this is just a test here
+	output.write( "<{}>".format( node.feature.name ) )
+	_write_sub( output, node )
+	output.write( "</{}>".format( node.feature.name ) )
 	
 def _write_paragraph( output, node ):
 	output.write( "<p>" )
@@ -61,3 +65,9 @@ def _write_section( output, node ):
 def _write_text( output, node ):
 	#TODO: Escaping of course
 	output.write( node.text )
+
+def _write_link( output, node ):
+	# TODO: more escaping
+	output.write( "<a href='{}'>".format( node.url ) )
+	_write_sub(output, node)
+	output.write( "</a>" )
