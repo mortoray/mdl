@@ -24,7 +24,7 @@ class Inline(InlineBlock):
 class Section(Block):
 	def __init__(self, level, title_text_block):
 		super().__init__()
-		self.title = title_text_block
+		self.title = title_text_block #TODO: is this supposed to be an array?
 		self.level = level
 
 
