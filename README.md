@@ -9,13 +9,12 @@ Follow the development over on [dev.to](https://dev.to/mortoray)
 
 ## Running
 
-There is no driver program at the moment. Only the test program.
+There is a simple driver program that reads MDL files and emits either HTML or Markdown.
+
+Run `./mdl.py` to get options.
 
 ```
-python3 log/2.md
+./mdl.py --write-markdown /tmp/out.md log/2.md
 ```
 
-This dumps the parse tree, the doc tree, and whatever else I felt I needed at that time I last committed.
-
-A proper command-line tool might be useful for teaching... I'll work on that.
-
+Be aware that not all emitters will support all of the doc-tree at any given time. It's all in flux now.
