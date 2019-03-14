@@ -27,8 +27,10 @@ def _write_node( output, node ):
 		q( doc_tree.Paragraph, _write_paragraph ) or \
 		q( doc_tree.Section, _write_section ) or \
 		q( doc_tree.Block, _write_block ) or \
+		q( doc_tree.Quote, _write_quote ) or \
 		q( doc_tree.Text, _write_text ) or \
 		q( doc_tree.Link, _write_link ) or \
+		q( doc_tree.Blurb, _write_blurb ) or \
 		fail()
 
 		
@@ -41,26 +43,42 @@ def _write_sub( output, node ):
 def _write_list( output, list_ ):
 	for sub in list_:
 		_write_node( output, sub )
-	
+
+# TODO: yucky string constants 
+inline_map = {
+	'italic': 'i',
+	'bold': 'b',
+}
+
 def _write_inline( output, node ):
-	#TODO: map features, this is just a test here
-	output.write( "<{}>".format( node.feature.name ) )
+	html_feature = inline_map[node.feature.name]
+	output.write( "<{}>".format( html_feature ) )
 	_write_sub( output, node )
-	output.write( "</{}>".format( node.feature.name ) )
+	output.write( "</{}>".format( html_feature ) )
 	
 def _write_paragraph( output, node ):
 	output.write( "<p>" )
 	_write_sub( output, node )
 	output.write( "</p>" )
 	
-	_write_sub( output, node )
-	
 def _write_section( output, node ):
+	output.write( "<section>" )
 	output.write( "<h{}>".format( node.level ) )
 	_write_list( output, node.title )
 	output.write( "</h{}>".format( node.level ) )
 	
 	_write_sub( output, node )
+	output.write( "</section>" )
+
+def _write_quote( output, node ):
+	output.write( "<blockquote>" )
+	_write_sub( output, node )
+	output.write( "</blockquote>" )
+
+def _write_blurb( output, node ):
+	output.write( "<footer>" )
+	_write_sub( output, node )
+	output.write( "</footer>" )
 	
 def _write_text( output, node ):
 	#TODO: Escaping of course
