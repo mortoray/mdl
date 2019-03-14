@@ -44,6 +44,9 @@ def _convert_para( node ):
 		
 	if node.class_.startswith( '#' ):
 		para = doc_tree.Section( len(node.class_), para_subs )
+	elif node.class_.startswith( '>' ):
+		para = doc_tree.Quote()
+		para.sub = para_subs
 	else:
 		para = doc_tree.Paragraph()
 		para.sub = para_subs

@@ -15,6 +15,8 @@ def get(node, indent = ''):
 		return get_block(node, indent)
 	if isinstance(node, doc_tree.Paragraph):
 		return get_paragraph(node, indent)
+	if isinstance(node, doc_tree.Quote):
+		return get_quote(node, indent)
 	if isinstance(node, doc_tree.Text):
 		return get_text(node, indent)
 	
@@ -40,6 +42,15 @@ def get_block(node, indent):
 	
 def get_paragraph(node, indent):
 	txt = "{}<Paragraph>\n".format( indent )
+	indent += '\t'
+	txt += indent
+	for sub in node.sub:
+		txt += get(sub)
+	txt += '\n'
+	return txt
+
+def get_quote(node, indent):
+	txt = "{}<Quote>\n".format( indent )
 	indent += '\t'
 	txt += indent
 	for sub in node.sub:

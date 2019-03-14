@@ -138,7 +138,7 @@ def parse_file( filename ):
 	return root
 
 _syntax_line = re.compile( '(#+|---)' )
-_syntax_block = re.compile( '(>)' )
+_syntax_block = re.compile( '(>|>>)' )
 _syntax_raw = re.compile( '(```)' )
 
 # A feature may have any regex opening match, but requires a single character terminal
