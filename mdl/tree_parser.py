@@ -15,12 +15,17 @@ class NodeType(Enum):
 	raw = 5
 	
 class Annotation(object):
-	def __init__(self, class_):
+	def __init__(self, class_, node = None):
 		self._class_ = class_
+		self._node = node
 		
 	@property
 	def class_( self ):
 		return self._class_
+		
+	@property
+	def node( self ):
+		return self._node
 		
 class Node(object):
 	def __init__(self, type):
@@ -165,8 +170,8 @@ def parse_file( filename ):
 	
 	return root
 
-_syntax_line = re.compile( '(#+|---)' )
-_syntax_block = re.compile( '(>|>>)' )
+_syntax_line = re.compile( '(?!//)(#+|---|/)' )
+_syntax_block = re.compile( '(>|>>|//)' )
 _syntax_raw = re.compile( '(```)' )
 _syntax_annotation = re.compile( '@(\p{L}+)' )
 
@@ -200,17 +205,26 @@ def _parse_blocks( src ):
 			
 		line_match = src.match( _syntax_line )
 		if line_match != None:
+			class_ = line_match.group(1)
 			line = Node(NodeType.block)
-			line.class_ = line_match.group(1)
+			line.class_ = class_
 			line.add_subs( _parse_line(src) )
-			append_block( line )
+			
+			if class_ == '/':
+				annotations.append( Annotation( 'comment', line) )
+			else:
+				append_block( line )
 			continue
 			
 		block = src.match( _syntax_block )
 		if block != None:
+			class_ = block.group(1)
 			para = _parse_para(src)
-			para.class_ = block.group(1)
-			append_block( para )
+			if class_ == '//':
+				annotations.append( Annotation( 'comment', para ) )
+			else:
+				para.class_ = block.group(1)
+				append_block( para )
 			continue
 			
 		raw_match = src.match( _syntax_raw )
@@ -352,7 +366,9 @@ def _dump_get( node, indent = '' ):
 	text += ' ' + node.text
 	if node.has_annotations():
 		for anno in node.iter_annotations():
-			text += '\n{}\t@{}'.format( indent, anno.class_ )
+			text += '\n{}\t@{}'.format( indent, _alt(anno.class_) )
+			if anno.node != None:
+				text += '\n' + _dump_get( anno.node, indent + '\t\t' )
 	if node.has_attr():
 		text += '\n' + indent + '\tattrs\n'
 		for attr in node.iter_attr():
@@ -368,3 +384,6 @@ def _dump_get( node, indent = '' ):
 
 def _bold(text):
 	return '\x1b[1m{}\x1b[m'.format(text)
+
+def _alt(text):
+	return '\x1b[96m{}\x1b[m'.format(text)
