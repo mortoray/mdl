@@ -48,7 +48,12 @@ def _convert_para( node ):
 		para = doc_tree.Quote()
 		para.sub = para_subs
 	else:
-		para = doc_tree.Paragraph()
+		# TODO: probably all classes should be handled with annotations
+		anno = node.get_annotation( "Blurb" )
+		if anno != None:
+			para = doc_tree.Blurb()
+		else:
+			para = doc_tree.Paragraph()
 		para.sub = para_subs
 		
 	return para

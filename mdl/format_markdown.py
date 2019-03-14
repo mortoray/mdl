@@ -22,6 +22,7 @@ def _write_node( output, node ):
 	_ = q( doc_tree.Inline, _write_inline ) or \
 		q( doc_tree.Paragraph, _write_paragraph ) or \
 		q( doc_tree.Quote, _write_quote ) or \
+		q( doc_tree.Blurb, _write_blurb ) or \
 		q( doc_tree.Section, _write_section ) or \
 		q( doc_tree.Block, _write_block ) or \
 		q( doc_tree.Text, _write_text ) or \
@@ -61,6 +62,11 @@ def _write_quote( output, node ):
 	output.write( "\n>" )
 	_write_sub( output, node )
 	output.write( "\n" )
+
+def _write_blurb( output, node ):
+	output.write( "\n----\n\n_" )
+	_write_sub( output, node )
+	output.write( "_\n" )
 	
 def _write_section( output, node ):
 	output.write( "\n" )

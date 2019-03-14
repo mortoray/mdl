@@ -1,5 +1,5 @@
 # Tree parsing
-import re
+import regex as re
 from enum import Enum
 
 class NodeType(Enum):
@@ -14,6 +14,14 @@ class NodeType(Enum):
 	# may not contain children, text is the raw text
 	raw = 5
 	
+class Annotation(object):
+	def __init__(self, class_):
+		self._class_ = class_
+		
+	@property
+	def class_( self ):
+		return self._class_
+		
 class Node(object):
 	def __init__(self, type):
 		self._sub = []
@@ -21,7 +29,7 @@ class Node(object):
 		self._type = type
 		self._class_ = ''
 		self._attr = None
-		pass
+		self._annotations = None
 		
 	def add_sub( self, sub ):
 		if self._type == NodeType.text:
@@ -34,6 +42,20 @@ class Node(object):
 		assert isinstance(sub, Node)
 		self._sub.append( sub )
 		
+	def add_annotations( self, annotations ):
+		if len(annotations) == 0:
+			return
+		if self._annotations == None:
+			self._annotations = []
+		self._annotations += annotations[:]
+		
+	def get_annotation( self, class_ ):
+		if self._annotations == None:
+			return None
+		for anno in self._annotations:	
+			if anno.class_ == class_:
+				return anno
+		return None
 		
 	def add_subs( self, subs ):
 		for sub in subs:
@@ -86,6 +108,12 @@ class Node(object):
 		if self._attr == None:
 			return []
 		return self._attr
+		
+	def has_annotations( self ):
+		return self._annotations != None and len(self._annotations) > 0
+		
+	def iter_annotations( self ):
+		return iter( self._annotations )
 		
 class Source(object):
 	def __init__(self, text):
@@ -140,6 +168,7 @@ def parse_file( filename ):
 _syntax_line = re.compile( '(#+|---)' )
 _syntax_block = re.compile( '(>|>>)' )
 _syntax_raw = re.compile( '(```)' )
+_syntax_annotation = re.compile( '@(\p{L}+)' )
 
 # A feature may have any regex opening match, but requires a single character terminal
 _syntax_feature = re.compile('([\*_\[\(])')
@@ -152,23 +181,36 @@ _syntax_feature_map = {
 
 def _parse_blocks( src ):
 	nodes = []
-	
+	annotations = []
+
+	def append_block( block ):
+		nonlocal annotations
+		
+		block.add_annotations( annotations )
+		annotations = []
+		nodes.append( block )
+		
 	while not src.is_at_end():
 		c = src.peek_char()
 		
+		annotation_match = src.match( _syntax_annotation )
+		if annotation_match != None:
+			annotations.append( Annotation( annotation_match.group(1) ) )
+			continue
+			
 		line_match = src.match( _syntax_line )
 		if line_match != None:
 			line = Node(NodeType.block)
 			line.class_ = line_match.group(1)
 			line.add_subs( _parse_line(src) )
-			nodes.append( line )
+			append_block( line )
 			continue
 			
 		block = src.match( _syntax_block )
 		if block != None:
 			para = _parse_para(src)
 			para.class_ = block.group(1)
-			nodes.append( para )
+			append_block( para )
 			continue
 			
 		raw_match = src.match( _syntax_raw )
@@ -177,14 +219,14 @@ def _parse_blocks( src ):
 			end_match, raw_text = src.to_match(_syntax_raw)
 			assert end_match != None
 			raw.text = raw_text
-			nodes.append( raw )
+			append_block( raw )
 			continue
 			
 			
 		para = _parse_para(src)
 		# drop empty paragraphs
 		if not para.sub_is_empty():
-			nodes.append( para )
+			append_block( para )
 			
 	return nodes
 	
@@ -308,6 +350,9 @@ def _dump_get( node, indent = '' ):
 		header += '/' + node.class_
 	text += _bold(header)
 	text += ' ' + node.text
+	if node.has_annotations():
+		for anno in node.iter_annotations():
+			text += '\n{}\t@{}'.format( indent, anno.class_ )
 	if node.has_attr():
 		text += '\n' + indent + '\tattrs\n'
 		for attr in node.iter_attr():

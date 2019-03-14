@@ -17,6 +17,8 @@ def get(node, indent = ''):
 		return get_paragraph(node, indent)
 	if isinstance(node, doc_tree.Quote):
 		return get_quote(node, indent)
+	if isinstance(node, doc_tree.Blurb):
+		return get_blurb(node, indent)
 	if isinstance(node, doc_tree.Text):
 		return get_text(node, indent)
 	
@@ -39,23 +41,28 @@ def get_block(node, indent):
 	for sub in node.sub:
 		txt += get(sub, indent + '\t')
 	return txt
-	
-def get_paragraph(node, indent):
-	txt = "{}<Paragraph>\n".format( indent )
+
+def _get_sub(node, indent):
 	indent += '\t'
-	txt += indent
+	txt = indent
 	for sub in node.sub:
 		txt += get(sub)
 	txt += '\n'
 	return txt
 
+def get_paragraph(node, indent):
+	txt = "{}<Paragraph>\n".format( indent )
+	txt += _get_sub(node, indent )
+	return txt
+
 def get_quote(node, indent):
 	txt = "{}<Quote>\n".format( indent )
-	indent += '\t'
-	txt += indent
-	for sub in node.sub:
-		txt += get(sub)
-	txt += '\n'
+	txt += _get_sub(node, indent )
+	return txt
+
+def get_blurb(node, indent):
+	txt = "{}<Blurb>\n".format( indent )
+	txt += _get_sub(node, indent )
 	return txt
 	
 def get_text(node, indent):

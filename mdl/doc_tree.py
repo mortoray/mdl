@@ -28,6 +28,10 @@ class Quote(BaseBlock):
 	def __init__(self):
 		super().__init__()
 		
+class Blurb(BaseBlock):
+	def __init__(self):
+		super().__init__()
+		
 class Text(object):
 	def __init__(self, text):
 		self.text = text
