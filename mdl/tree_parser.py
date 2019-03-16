@@ -172,7 +172,7 @@ def parse_file( filename ):
 	return root
 
 _syntax_line = re.compile( '(?!//)(#+|---|/)' )
-_syntax_block = re.compile( '(>|>>|//)' )
+_syntax_block = re.compile( '(>|>>|//|\^([\p{L}\p{N}]*))' )
 _syntax_raw = re.compile( '(```)' )
 _syntax_annotation = re.compile( '@(\p{L}+)' )
 
@@ -226,6 +226,11 @@ def _parse_blocks( src ):
 				annotations.append( Annotation( 'comment', para ) )
 			else:
 				para.class_ = block.group(1)
+				
+				# TODO: howto match two groups with a dpeendent group to avoid this?
+				if class_[0:1] == '^':
+					para.class_ = '^'
+					para.text = block.group(2)
 				append_block( para )
 			continue
 			

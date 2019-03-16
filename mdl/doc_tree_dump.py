@@ -4,6 +4,9 @@ def dump(node, indent = ''):
 	print( get(node, indent) )
 
 def get(node, indent = ''):
+	if node == None:
+		return '** NONE **'
+		
 	if isinstance(node, doc_tree.Section):
 		return get_section(node, indent)
 	if isinstance(node, doc_tree.Inline):
@@ -62,5 +65,5 @@ def get_link(node, indent):
 	return '%link{{url={}}}/{}/'.format( node.url, get_all_inline(node.sub) )
 
 def get_note(node, indent):
-	return '^{{{}}}'.format( get_link(node.node, indent) )
+	return '^{{{}}}'.format( get(node.node) )
 	

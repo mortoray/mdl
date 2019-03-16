@@ -1,3 +1,7 @@
 I want a note^[inline note](https://with.link).
 
-I wnat a note after the paragraph.
+I want a note^ref after the paragraph. And More^more.
+
+^ref Some text.
+
+^more[later link](url:ref)

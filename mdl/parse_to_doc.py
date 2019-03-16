@@ -2,16 +2,21 @@
 from . import doc_tree
 from . import tree_parser
 
+class _ConvertContext(object):
+	def __init__(self):
+		self.open_notes = {}
+		
 def convert( node ):
 	assert node.type == tree_parser.NodeType.container
 	
+	ctx = _ConvertContext()
 	root = doc_tree.Section(0)
-	root.sub = _convert_blocks( node.iter_sub() )
+	root.sub = _convert_blocks( ctx, node.iter_sub() )
 	
 	return root
 	
 	
-def _convert_blocks( nodes_iter ):
+def _convert_blocks( ctx, nodes_iter ):
 	out = []
 	
 	section_stack = []
@@ -19,7 +24,7 @@ def _convert_blocks( nodes_iter ):
 	
 	for node in nodes_iter:
 
-		para = _convert_para(node)
+		para = _convert_para( ctx, node)
 		if isinstance(para, doc_tree.Section):
 			while para.level <= len(section_stack):
 				_ = section_stack.pop()
@@ -32,30 +37,41 @@ def _convert_blocks( nodes_iter ):
 			cur_out.append( para )
 			section_stack.append( para )
 			cur_out = para.sub
-		else:
+		elif para != None:
 			cur_out.append( para )
 			
 	return out
 
-def _convert_inlines( node ):
+def _convert_inlines( ctx, node ):
 	para_subs = []
 	next_node = 0
 	subs = node.iter_sub()
 	while next_node < len(subs):
-		(next_node, para) = _convert_inline( next_node, subs )
+		(next_node, para) = _convert_inline( ctx, next_node, subs )
 		if para != None:
 			para_subs.append( para )
 			
 	return para_subs
 
-def _convert_para( node ):
-	para_subs = _convert_inlines( node )
+def _convert_para( ctx, node ):
+	para_subs = _convert_inlines( ctx, node )
 		
 	if node.class_.startswith( '#' ):
 		para = doc_tree.Section( len(node.class_), para_subs )
 	elif node.class_.startswith( '>' ):
 		para = doc_tree.Block( doc_tree.block_quote )
 		para.sub = para_subs
+	elif node.class_.startswith( '^' ):
+		assert node.text in ctx.open_notes
+		if len(para_subs) == 1:
+			ctx.open_notes[node.text].node = para_subs[0]
+		else:
+			para = doc_tree.Block( doc_tree.block_paragraph )
+			para.sub = para_subs
+			ctx.open_notes[node.text].node = para
+		
+		del ctx.open_notes[node.text]
+		return None
 	else:
 		class_ = None
 		
@@ -71,7 +87,7 @@ def _convert_para( node ):
 		
 	return para
 	
-def _convert_inline( node_offset, nodes ):
+def _convert_inline( ctx, node_offset, nodes ):
 	node = nodes[node_offset]
 	node_offset += 1
 	
@@ -83,10 +99,10 @@ def _convert_inline( node_offset, nodes ):
 		
 	if node.type == tree_parser.NodeType.inline:
 		if node.class_ == '[':
-			return (node_offset, _convert_link( node ))
+			return (node_offset, _convert_link( ctx, node ))
 
 		if node.class_ == '^':
-			return _convert_note( node, node_offset, nodes )
+			return _convert_note( ctx, node, node_offset, nodes )
 			
 		if node.class_ == '*':
 			feature = doc_tree.feature_bold
@@ -96,28 +112,32 @@ def _convert_inline( node_offset, nodes ):
 			raise Exception("Unknown feature", node.class_)
 			
 		block = doc_tree.Inline(feature)
-		block.sub = _convert_inlines(node)
+		block.sub = _convert_inlines(ctx, node)
 		
 		return (node_offset, block)
 		
 	raise Exception("Unexpected node type" )
 
-def _convert_note( node, next_offset, nodes ):
+def _convert_note( ctx, node, next_offset, nodes ):
 	# TODO: duplicate with above... need an iterator of some kind
 	def get_next_node():
 		return nodes[next_offset] if next_offset < len(nodes) else None
 		
 	if len(node.text) > 0:
-		assert False
+		assert not node.text in ctx.open_notes
+		empty_note = doc_tree.Note(None) #incomplete for now
+		ctx.open_notes[node.text] = empty_note
+		return (next_offset, empty_note)
+		
 	else:
 		next_node = get_next_node()
 		assert next_node != None
 		
-		link = _convert_link( next_node )
+		link = _convert_link( ctx, next_node )
 		return (next_offset+1, doc_tree.Note(link))
 
 
-def _collapse_text( node ):
+def _collapse_text( ctx, node ):
 	#TODO: this is really rough for now
 	text = ''
 	for sub in node.iter_sub():
@@ -125,12 +145,12 @@ def _collapse_text( node ):
 	return text
 
 
-def _convert_link( node ):
+def _convert_link( ctx, node ):
 	attrs = node.get_attrs()
-	url = _collapse_text( attrs[0] ) #TODO: proper iter
+	url = _collapse_text( ctx, attrs[0] ) #TODO: proper iter
 
 	block = doc_tree.Link(url)
-	block.sub = _convert_inlines(node)
+	block.sub = _convert_inlines(ctx, node)
 		
 	return block
 	
