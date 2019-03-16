@@ -75,6 +75,9 @@ def _convert_inline( node_offset, nodes ):
 	node = nodes[node_offset]
 	node_offset += 1
 	
+	def get_next_node():
+		return nodes[node_offset] if node_offset < len(nodes) else None
+	
 	if node.type == tree_parser.NodeType.text:
 		return (node_offset, doc_tree.Text( node.text ))
 		
@@ -82,6 +85,9 @@ def _convert_inline( node_offset, nodes ):
 		if node.class_ == '[':
 			return (node_offset, _convert_link( node ))
 
+		if node.class_ == '^':
+			return _convert_note( node, node_offset, nodes )
+			
 		if node.class_ == '*':
 			feature = doc_tree.feature_bold
 		elif node.class_ == '_':
@@ -95,6 +101,21 @@ def _convert_inline( node_offset, nodes ):
 		return (node_offset, block)
 		
 	raise Exception("Unexpected node type" )
+
+def _convert_note( node, next_offset, nodes ):
+	# TODO: duplicate with above... need an iterator of some kind
+	def get_next_node():
+		return nodes[next_offset] if next_offset < len(nodes) else None
+		
+	if len(node.text) > 0:
+		assert False
+	else:
+		next_node = get_next_node()
+		assert next_node != None
+		
+		link = _convert_link( next_node )
+		return (next_offset+1, doc_tree.Note(link))
+
 
 def _collapse_text( node ):
 	#TODO: this is really rough for now

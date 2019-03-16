@@ -324,6 +324,7 @@ def _parse_line( src, terminal = '\n' ):
 			end_text()
 			note = Node( NodeType.inline )
 			note.class_ = '^'
+			note.text = note_name
 			push_bit( note )
 			continue
 			
