@@ -12,6 +12,9 @@ class BaseInlineBlock(BaseBlock):
 	def __init__(self):
 		super().__init__()
 		
+class BaseInlineEmpty(object):
+	def __init__(self):
+		pass
 		
 """
 Leaf types may only inherit from Base node types. This prevents collision on simple visitors, as well as keeping the "is-a" relationships clean.
@@ -62,4 +65,9 @@ class Link(BaseInlineBlock):
 	def __init__(self, url):
 		super().__init__()
 		self.url = url
+		
+class Note(BaseInlineEmpty):
+	def __init__(self, node):
+		super().__init__()
+		self.node = node
 		

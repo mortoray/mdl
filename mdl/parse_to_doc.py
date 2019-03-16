@@ -37,10 +37,19 @@ def _convert_blocks( nodes_iter ):
 			
 	return out
 
-def _convert_para( node ):
+def _convert_inlines( node ):
 	para_subs = []
-	for sub in node.iter_sub():
-		para_subs.append( _convert_inline( sub ) )
+	next_node = 0
+	subs = node.iter_sub()
+	while next_node < len(subs):
+		(next_node, para) = _convert_inline( next_node, subs )
+		if para != None:
+			para_subs.append( para )
+			
+	return para_subs
+
+def _convert_para( node ):
+	para_subs = _convert_inlines( node )
 		
 	if node.class_.startswith( '#' ):
 		para = doc_tree.Section( len(node.class_), para_subs )
@@ -62,14 +71,17 @@ def _convert_para( node ):
 		
 	return para
 	
-def _convert_inline( node ):
+def _convert_inline( node_offset, nodes ):
+	node = nodes[node_offset]
+	node_offset += 1
+	
 	if node.type == tree_parser.NodeType.text:
-		return doc_tree.Text( node.text )
+		return (node_offset, doc_tree.Text( node.text ))
 		
 	if node.type == tree_parser.NodeType.inline:
 		if node.class_ == '[':
-			return _convert_link( node )
-			
+			return (node_offset, _convert_link( node ))
+
 		if node.class_ == '*':
 			feature = doc_tree.feature_bold
 		elif node.class_ == '_':
@@ -78,10 +90,9 @@ def _convert_inline( node ):
 			raise Exception("Unknown feature", node.class_)
 			
 		block = doc_tree.Inline(feature)
-		for sub in node.iter_sub():
-			block.sub.append( _convert_inline( sub ) )
+		block.sub = _convert_inlines(node)
 		
-		return block
+		return (node_offset, block)
 		
 	raise Exception("Unexpected node type" )
 
@@ -98,8 +109,7 @@ def _convert_link( node ):
 	url = _collapse_text( attrs[0] ) #TODO: proper iter
 
 	block = doc_tree.Link(url)
-	for sub in node.iter_sub():
-		block.sub.append( _convert_inline( sub ) )
+	block.sub = _convert_inlines(node)
 		
 	return block
 	

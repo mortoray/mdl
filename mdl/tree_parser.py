@@ -66,8 +66,9 @@ class Node(object):
 		for sub in subs:
 			self.add_sub( sub )
 			
+	# As Python lacks a random access iterator, this returns a list view of the subs, it should not be modified
 	def iter_sub( self ):
-		return iter( self._sub )
+		return self._sub
 		
 	def sub_is_empty( self ):
 		return len(self._sub) == 0
@@ -183,6 +184,7 @@ _syntax_feature_map = {
 	'[': ']',
 	'(': ')',
 }
+_syntax_inline_note = re.compile( '\^([\p{L}\p{N}]*)' )
 
 def _parse_blocks( src ):
 	nodes = []
@@ -314,6 +316,15 @@ def _parse_line( src, terminal = '\n' ):
 		if c == '\\':
 			_ = src.next_char()
 			text += src.next_char()
+			continue
+			
+		note_match = src.match( _syntax_inline_note )
+		if note_match != None:
+			note_name = note_match.group(1)
+			end_text()
+			note = Node( NodeType.inline )
+			note.class_ = '^'
+			push_bit( note )
 			continue
 			
 		feature_match = src.match( _syntax_feature )
