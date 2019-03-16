@@ -24,13 +24,10 @@ def _write_node( output, node ):
 		raise Exception( "Unknown node type", node )
 	
 	_ = q( doc_tree.Inline, _write_inline ) or \
-		q( doc_tree.Paragraph, _write_paragraph ) or \
 		q( doc_tree.Section, _write_section ) or \
 		q( doc_tree.Block, _write_block ) or \
-		q( doc_tree.Quote, _write_quote ) or \
 		q( doc_tree.Text, _write_text ) or \
 		q( doc_tree.Link, _write_link ) or \
-		q( doc_tree.Blurb, _write_blurb ) or \
 		fail()
 
 		
@@ -56,28 +53,27 @@ def _write_inline( output, node ):
 	_write_sub( output, node )
 	output.write( "</{}>".format( html_feature ) )
 	
-def _write_paragraph( output, node ):
-	output.write( "<p>" )
+def _write_block( output, node ):
+	class_ = 'p'
+	if node.class_ == doc_tree.block_quote:
+		class_ = 'blockquote'
+	elif node.class_ == doc_tree.block_blurb:
+		class_ = 'footer'
+		
+	output.write( "<{}>".format(class_) )
 	_write_sub( output, node )
-	output.write( "</p>" )
+	output.write( "</{}>".format(class_) )
 	
 def _write_section( output, node ):
 	output.write( "<section>" )
-	output.write( "<h{}>".format( node.level ) )
-	_write_list( output, node.title )
-	output.write( "</h{}>".format( node.level ) )
+	if node.title != None:
+		output.write( "<h{}>".format( node.level ) )
+		_write_list( output, node.title )
+		output.write( "</h{}>".format( node.level ) )
 	
 	_write_sub( output, node )
 	output.write( "</section>" )
 
-def _write_quote( output, node ):
-	output.write( "<blockquote>" )
-	_write_sub( output, node )
-	output.write( "</blockquote>" )
-
-def _write_blurb( output, node ):
-	output.write( "<footer>" )
-	_write_sub( output, node )
 	output.write( "</footer>" )
 	
 def _write_text( output, node ):

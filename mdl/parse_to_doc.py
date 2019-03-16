@@ -5,7 +5,7 @@ from . import tree_parser
 def convert( node ):
 	assert node.type == tree_parser.NodeType.container
 	
-	root = doc_tree.Block()
+	root = doc_tree.Section(0)
 	root.sub = _convert_blocks( node.iter_sub() )
 	
 	return root
@@ -45,15 +45,19 @@ def _convert_para( node ):
 	if node.class_.startswith( '#' ):
 		para = doc_tree.Section( len(node.class_), para_subs )
 	elif node.class_.startswith( '>' ):
-		para = doc_tree.Quote()
+		para = doc_tree.Block( doc_tree.block_quote )
 		para.sub = para_subs
 	else:
+		class_ = None
+		
 		# TODO: probably all classes should be handled with annotations
 		anno = node.get_annotation( "Blurb" )
 		if anno != None:
-			para = doc_tree.Blurb()
+			class_ = doc_tree.block_blurb
 		else:
-			para = doc_tree.Paragraph()
+			class_ = doc_tree.block_paragraph
+			
+		para = doc_tree.Block( class_ )
 		para.sub = para_subs
 		
 	return para

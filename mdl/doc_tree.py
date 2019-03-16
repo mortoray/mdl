@@ -17,20 +17,22 @@ class BaseInlineBlock(BaseBlock):
 Leaf types may only inherit from Base node types. This prevents collision on simple visitors, as well as keeping the "is-a" relationships clean.
 """
 class Block(BaseBlock):
-	def __init__(self):
+	def __init__(self, class_):
 		super().__init__()
+		self._class_ = class_
 		
-class Paragraph(BaseBlock):
-	def __init__(self):
-		super().__init__()
+	@property
+	def class_(self):
+		return self._class_
 		
-class Quote(BaseBlock):
-	def __init__(self):
-		super().__init__()
 		
-class Blurb(BaseBlock):
-	def __init__(self):
-		super().__init__()
+class BlockClass(object):
+	def __init__(self, name):
+		self.name = name
+		
+block_paragraph = BlockClass('paragraph')
+block_quote = BlockClass('quote')
+block_blurb = BlockClass('blurb')
 		
 class Text(object):
 	def __init__(self, text):
@@ -39,10 +41,11 @@ class Text(object):
 class Inline(BaseInlineBlock):
 	def __init__(self, feature):
 		super().__init__()
+		assert isinstance(feature, InlineFeature)
 		self.feature = feature
 		
 class Section(BaseBlock):
-	def __init__(self, level, title_text_block):
+	def __init__(self, level, title_text_block = None ):
 		super().__init__()
 		self.title = title_text_block #TODO: is this supposed to be an array?
 		self.level = level

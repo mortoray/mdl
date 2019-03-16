@@ -13,18 +13,15 @@ def get(node, indent = ''):
 		
 	if isinstance(node, doc_tree.Block):
 		return get_block(node, indent)
-	if isinstance(node, doc_tree.Paragraph):
-		return get_paragraph(node, indent)
-	if isinstance(node, doc_tree.Quote):
-		return get_quote(node, indent)
-	if isinstance(node, doc_tree.Blurb):
-		return get_blurb(node, indent)
 	if isinstance(node, doc_tree.Text):
 		return get_text(node, indent)
 	
 	raise Exception( "Unsupported type", node )
 
 def get_all_inline(nodes):
+	if nodes == None:
+		return ''
+		
 	txt = ''
 	for node in nodes:
 		txt += get(node)
@@ -36,12 +33,6 @@ def get_all(nodes, indent):
 		txt += get(node, indent)
 	return txt
 	
-def get_block(node, indent):
-	txt = "{}<Block>\n".format(indent)
-	for sub in node.sub:
-		txt += get(sub, indent + '\t')
-	return txt
-
 def _get_sub(node, indent):
 	indent += '\t'
 	txt = indent
@@ -50,19 +41,9 @@ def _get_sub(node, indent):
 	txt += '\n'
 	return txt
 
-def get_paragraph(node, indent):
-	txt = "{}<Paragraph>\n".format( indent )
-	txt += _get_sub(node, indent )
-	return txt
-
-def get_quote(node, indent):
-	txt = "{}<Quote>\n".format( indent )
-	txt += _get_sub(node, indent )
-	return txt
-
-def get_blurb(node, indent):
-	txt = "{}<Blurb>\n".format( indent )
-	txt += _get_sub(node, indent )
+def get_block(node, indent):
+	txt = "{}<Block:{}>\n".format( indent, node.class_.name )
+	txt += _get_sub(node, indent)
 	return txt
 	
 def get_text(node, indent):

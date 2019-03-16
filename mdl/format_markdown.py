@@ -20,9 +20,6 @@ def _write_node( output, node ):
 		raise Exception( "Unknown node type", node )
 	
 	_ = q( doc_tree.Inline, _write_inline ) or \
-		q( doc_tree.Paragraph, _write_paragraph ) or \
-		q( doc_tree.Quote, _write_quote ) or \
-		q( doc_tree.Blurb, _write_blurb ) or \
 		q( doc_tree.Section, _write_section ) or \
 		q( doc_tree.Block, _write_block ) or \
 		q( doc_tree.Text, _write_text ) or \
@@ -30,9 +27,6 @@ def _write_node( output, node ):
 		fail()
 
 		
-def _write_block( output, node ):
-	_write_sub( output, node )
-	
 def _write_sub( output, node ):
 	_write_list( output, node.sub )
 		
@@ -67,12 +61,22 @@ def _write_blurb( output, node ):
 	output.write( "\n----\n\n_" )
 	_write_sub( output, node )
 	output.write( "_\n" )
+
+def _write_block( output, node ):
+	if node.class_ == doc_tree.block_quote:
+		_write_quote( output, node )
+	elif node.class_ == doc_tree.block_blurb:
+		_write_blurb( output, node )
+	else:
+		_write_paragraph( output, node )
+	
 	
 def _write_section( output, node ):
 	output.write( "\n" )
-	output.write( "#" * node.level )
-	_write_list( output, node.title )
-	output.write( "\n" )
+	if node.title != None:
+		output.write( "#" * node.level )
+		_write_list( output, node.title )
+		output.write( "\n" )
 	
 	_write_sub( output, node )
 	
