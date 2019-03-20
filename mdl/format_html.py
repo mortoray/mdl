@@ -58,7 +58,7 @@ class _HtmlWriter(object):
 	}
 
 	def _write_inline( self, node ):
-		html_feature = inline_map[node.feature.name]
+		html_feature = type(self).inline_map[node.feature.name]
 		self.output.write( "<{}>".format( html_feature ) )
 		self._write_sub( node )
 		self.output.write( "</{}>".format( html_feature ) )

@@ -54,7 +54,7 @@ class MarkdownWriter(render.Writer):
 		"bold": "*",
 	}
 	def _write_inline( self, node ):
-		fmt = inline_map[node.feature.name]
+		fmt = type(self).inline_map[node.feature.name]
 		self.output.write( fmt )
 		self._write_sub( node )
 		self.output.write( fmt )
