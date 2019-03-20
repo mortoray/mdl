@@ -174,6 +174,7 @@ def parse_file( filename ):
 _syntax_line = re.compile( '(?!//)(#+|---|/)' )
 _syntax_block = re.compile( '(>|>>|//|\^([\p{L}\p{N}]*))' )
 _syntax_raw = re.compile( '(```)' )
+_syntax_raw_end = re.compile( '(^```)', re.MULTILINE )
 _syntax_annotation = re.compile( '@(\p{L}+)' )
 
 # A feature may have any regex opening match, but requires a single character terminal
@@ -237,9 +238,10 @@ def _parse_blocks( src ):
 		raw_match = src.match( _syntax_raw )
 		if raw_match != None:
 			raw = Node(NodeType.raw)
-			end_match, raw_text = src.to_match(_syntax_raw)
+			end_match, raw_text = src.to_match(_syntax_raw_end)
 			assert end_match != None
-			raw.text = raw_text
+			# Strip first and last newlines as they're part of the syntax
+			raw.text = raw_text[1:-1]
 			append_block( raw )
 			continue
 			

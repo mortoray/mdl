@@ -38,6 +38,7 @@ class MarkdownWriter(render.Writer):
 			q( doc_tree.Text, self._write_text ) or \
 			q( doc_tree.Link, self._write_link ) or \
 			q( doc_tree.Note, self._write_note ) or \
+			q( doc_tree.Code, self._write_code ) or \
 			fail()
 
 			
@@ -117,3 +118,8 @@ class MarkdownWriter(render.Writer):
 			self._write_node( note.node )
 			self.output.write("\n")
 			
+
+	def _write_code( self, node ):
+		self.output.write( "\n```\n" )
+		self.output.write( node.text ) # TODO: escape
+		self.output.write( "\n```\n" )
