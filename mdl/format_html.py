@@ -38,6 +38,7 @@ class _HtmlWriter(object):
 			q( doc_tree.Text, self._write_text ) or \
 			q( doc_tree.Link, self._write_link ) or \
 			q( doc_tree.Note, self._write_note ) or \
+			q( doc_tree.Code, self._write_code ) or \
 			fail()
 
 			
@@ -64,15 +65,20 @@ class _HtmlWriter(object):
 		self.output.write( "</{}>".format( html_feature ) )
 		
 	def _write_block( self, node ):
-		class_ = 'p'
+		tag = 'p'
+		class_ = ''
 		if node.class_ == doc_tree.block_quote:
-			class_ = 'blockquote'
+			tag = 'blockquote'
+		elif node.class_ == doc_tree.block_aside:
+			tag = 'blockquote'
+			class_ = 'aside'
 		elif node.class_ == doc_tree.block_blurb:
-			class_ = 'footer'
+			tag = 'footer'
+			class_ = 'blurb'
 			
-		self.output.write( "<{}>".format(class_) )
+		self.output.write( "<{} class='{}'>".format(tag, class_) )
 		self._write_sub( node )
-		self.output.write( "</{}>".format(class_) )
+		self.output.write( "</{}>".format(tag) )
 		
 	def _write_section( self, node ):
 		self.output.write( "<section>" )
@@ -111,3 +117,7 @@ class _HtmlWriter(object):
 			self.output.write( '</li>' )
 		self.output.write( '</ol>' )
 		self.output.write( '</footer>' )
+		
+	def _write_code( self, node ):
+		self.output.write( '<pre>{}</pre>'.format( node.text ) )
+		

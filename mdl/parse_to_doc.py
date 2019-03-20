@@ -24,21 +24,28 @@ def _convert_blocks( ctx, nodes_iter ):
 	
 	for node in nodes_iter:
 
-		para = _convert_para( ctx, node)
-		if isinstance(para, doc_tree.Section):
-			while para.level <= len(section_stack):
-				_ = section_stack.pop()
+		if node.type == tree_parser.NodeType.raw:
+			code = doc_tree.Code(node.text)
+			cur_out.append( code )
 			
-			if len(section_stack) > 0:
-				cur_out = section_stack[-1].sub
-			else:
-				cur_out = out
-			
-			cur_out.append( para )
-			section_stack.append( para )
-			cur_out = para.sub
-		elif para != None:
-			cur_out.append( para )
+		elif node.type == tree_parser.NodeType.block:
+			para = _convert_para( ctx, node)
+			if isinstance(para, doc_tree.Section):
+				while para.level <= len(section_stack):
+					_ = section_stack.pop()
+				
+				if len(section_stack) > 0:
+					cur_out = section_stack[-1].sub
+				else:
+					cur_out = out
+				
+				cur_out.append( para )
+				section_stack.append( para )
+				cur_out = para.sub
+			elif para != None:
+				cur_out.append( para )
+		else:
+			raise Exception("Unexpected block type", node)
 			
 	return out
 
@@ -76,9 +83,12 @@ def _convert_para( ctx, node ):
 		class_ = None
 		
 		# TODO: probably all classes should be handled with annotations
-		anno = node.get_annotation( "Blurb" )
-		if anno != None:
+		blurb = node.get_annotation( "Blurb" )
+		aside = node.get_annotation( "Aside" )
+		if blurb != None:
 			class_ = doc_tree.block_blurb
+		elif aside != None:
+			class_ = doc_tree.block_aside
 		else:
 			class_ = doc_tree.block_paragraph
 			
@@ -124,7 +134,9 @@ def _convert_note( ctx, node, next_offset, nodes ):
 		return nodes[next_offset] if next_offset < len(nodes) else None
 		
 	if len(node.text) > 0:
-		assert not node.text in ctx.open_notes
+		if node.text in ctx.open_notes:
+			raise Exception( "There's already a footnote reference with name {}".format( node.text ) )
+		
 		empty_note = doc_tree.Note(None) #incomplete for now
 		ctx.open_notes[node.text] = empty_note
 		return (next_offset, empty_note)

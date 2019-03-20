@@ -12,7 +12,12 @@ class BaseInlineBlock(BaseBlock):
 	def __init__(self):
 		super().__init__()
 		
+# TODO: these "Empty" names are yucky
 class BaseInlineEmpty(object):
+	def __init__(self):
+		pass
+
+class BaseBlockEmpty(object):
 	def __init__(self):
 		pass
 		
@@ -36,6 +41,7 @@ class BlockClass(object):
 block_paragraph = BlockClass('paragraph')
 block_quote = BlockClass('quote')
 block_blurb = BlockClass('blurb')
+block_aside = BlockClass('aside')
 		
 class Text(object):
 	def __init__(self, text):
@@ -71,3 +77,8 @@ class Note(BaseInlineEmpty):
 		super().__init__()
 		self.node = node
 		
+class Code(BaseBlockEmpty):
+	def __init__(self, text):
+		super().__init__()
+		self.text = text
+	
