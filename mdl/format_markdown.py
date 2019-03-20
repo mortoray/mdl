@@ -2,90 +2,118 @@
 
 import io
 from . import doc_tree
+from . import render
 
 def format_markdown( root ):
-	output = io.StringIO()
-	_write_node( output, root )
-	
-	return output.getvalue()
+	return MarkdownWriter().render(root)
 
-def _write_node( output, node ):
-	def q( type, func ):
-		if isinstance( node, type ):
-			func( output, node )
-			return True
-		return False
+"""
+This is focused on dev.to flavoured Markdown at the moment, which seems pretty much similar to GitHub styled markdown. We'll have to add custom emitters for different markdown eventually (sharing a base class)
+"""
+class MarkdownWriter(render.Writer):
 
-	def fail():
-		raise Exception( "Unknown node type", node )
-	
-	_ = q( doc_tree.Inline, _write_inline ) or \
-		q( doc_tree.Section, _write_section ) or \
-		q( doc_tree.Block, _write_block ) or \
-		q( doc_tree.Text, _write_text ) or \
-		q( doc_tree.Link, _write_link ) or \
-		fail()
-
+	def __init__(self):
+		super()
+		self.output = io.StringIO()
+		self.notes = []
 		
-def _write_sub( output, node ):
-	_write_list( output, node.sub )
+	def render(self, node):
+		self._write_node( node )
+		self._write_notes()
+		return self.output.getvalue()
 		
-def _write_list( output, list_ ):
-	for sub in list_:
-		_write_node( output, sub )
-	
+	def _write_node( self, node ):
+		def q( type, func ):
+			if isinstance( node, type ):
+				func( node )
+				return True
+			return False
 
-inline_map = {
-	"italic": "_",
-	"bold": "*",
-}
-def _write_inline( output, node ):
-	#TODO: map features, this is just a test here
+		def fail():
+			raise Exception( "Unknown node type", node )
+		
+		_ = q( doc_tree.Inline, self._write_inline ) or \
+			q( doc_tree.Section, self._write_section ) or \
+			q( doc_tree.Block, self._write_block ) or \
+			q( doc_tree.Text, self._write_text ) or \
+			q( doc_tree.Link, self._write_link ) or \
+			q( doc_tree.Note, self._write_note ) or \
+			fail()
 
-	fmt = inline_map[node.feature.name]
-	output.write( fmt )
-	_write_sub( output, node )
-	output.write( fmt )
-	
-def _write_paragraph( output, node ):
-	output.write( "\n" )
-	_write_sub( output, node )
-	output.write( "\n" )
+			
+	def _write_sub( self, node ):
+		self._write_list( node.sub )
+			
+	def _write_list( self, list_ ):
+		for sub in list_:
+			self._write_node( sub )
+		
 
-def _write_quote( output, node ):
-	output.write( "\n>" )
-	_write_sub( output, node )
-	output.write( "\n" )
+	inline_map = {
+		"italic": "_",
+		"bold": "*",
+	}
+	def _write_inline( self, node ):
+		fmt = inline_map[node.feature.name]
+		self.output.write( fmt )
+		self._write_sub( node )
+		self.output.write( fmt )
+		
+	def _write_paragraph( self, node ):
+		self.output.write( "\n" )
+		self._write_sub( node )
+		self.output.write( "\n" )
 
-def _write_blurb( output, node ):
-	output.write( "\n----\n\n_" )
-	_write_sub( output, node )
-	output.write( "_\n" )
+	def _write_quote( self, node ):
+		self.output.write( "\n>" )
+		self._write_sub( node )
+		self.output.write( "\n" )
 
-def _write_block( output, node ):
-	if node.class_ == doc_tree.block_quote:
-		_write_quote( output, node )
-	elif node.class_ == doc_tree.block_blurb:
-		_write_blurb( output, node )
-	else:
-		_write_paragraph( output, node )
-	
-	
-def _write_section( output, node ):
-	output.write( "\n" )
-	if node.title != None:
-		output.write( "#" * node.level )
-		_write_list( output, node.title )
-		output.write( "\n" )
-	
-	_write_sub( output, node )
-	
-def _write_text( output, node ):
-	#TODO: Escaping of course
-	output.write( node.text )
+	def _write_blurb( self, node ):
+		self.output.write( "\n----\n\n_" )
+		self._write_sub( node )
+		self.output.write( "_\n" )
 
-def _write_link( output, node ):
-	# TODO: more escaping
-	output.write( "[" )
-	_write_sub(output, node)
-	output.write( "]({})".format( node.url ) )
+	def _write_block( self, node ):
+		if node.class_ == doc_tree.block_quote:
+			self._write_quote( node )
+		elif node.class_ == doc_tree.block_blurb:
+			self._write_blurb( node )
+		else:
+			self._write_paragraph( node )
+		
+		
+	def _write_section( self, node ):
+		self.output.write( "\n" )
+		if node.title != None:
+			self.output.write( "#" * node.level )
+			self._write_list( node.title )
+			self.output.write( "\n" )
+		
+		self._write_sub(  node )
+		
+	def _write_text( self, node ):
+		#TODO: Escaping of course
+		self.output.write( node.text )
+
+	def _write_link( self, node ):
+		# TODO: more escaping
+		self.output.write( "[" )
+		self._write_sub(node)
+		self.output.write( "]({})".format( node.url ) )
+
+	def _write_note( self, node ):
+		self.notes.append( node )
+		number = len(self.notes)
+		self.output.write( "<sup>[{}](#note-{})</sup>".format( number, number ) )
+
+	def _write_notes( self ):
+		if len(self.notes) == 0:
+			return
+			
+		self.output.write( '\n----\n\n' )
+		for index, note in enumerate(self.notes):
+			self.output.write( '{}. <a id="note-{}"></a>'.format(index+1, index+1) )
+			self._write_node( note.node )
+			self.output.write("\n")
+			
