@@ -356,6 +356,7 @@ def _parse_para( src ):
 	para = Node(NodeType.block)
 	while not src.is_at_end():
 		line = _parse_line(src)
+		# Blank line ends the paragraph
 		if len(line) == 0:
 			break
 		
