@@ -120,6 +120,6 @@ class MarkdownWriter(render.Writer):
 			
 
 	def _write_code( self, node ):
-		self.output.write( "\n```\n" )
+		self.output.write( "\n```{}\n".format( node.class_ ) )
 		self.output.write( node.text ) # TODO: escape
 		self.output.write( "\n```\n" )

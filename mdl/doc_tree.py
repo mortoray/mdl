@@ -78,7 +78,8 @@ class Note(BaseInlineEmpty):
 		self.node = node
 		
 class Code(BaseBlockEmpty):
-	def __init__(self, text):
+	def __init__(self, text, class_):
 		super().__init__()
 		self.text = text
+		self.class_ = class_
 	

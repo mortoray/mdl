@@ -25,7 +25,7 @@ def _convert_blocks( ctx, nodes_iter ):
 	for node in nodes_iter:
 
 		if node.type == tree_parser.NodeType.raw:
-			code = doc_tree.Code(node.text)
+			code = doc_tree.Code(node.text, node.class_)
 			cur_out.append( code )
 			
 		elif node.type == tree_parser.NodeType.block:
