@@ -179,10 +179,11 @@ _syntax_annotation = re.compile( '@(\p{L}+)' )
 _syntax_rest_line = re.compile( '(.*)$', re.MULTILINE )
 
 # A feature may have any regex opening match, but requires a single character terminal
-_syntax_feature = re.compile('([\*_\[\(])')
+_syntax_feature = re.compile('([\*_\[\(`])')
 _syntax_feature_map = {
 	'*': '*',
 	'_': '_',
+	'`': '`',
 	'[': ']',
 	'(': ')',
 }
