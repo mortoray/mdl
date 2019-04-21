@@ -69,6 +69,7 @@ class InlineFeature(object):
 		
 feature_bold = InlineFeature("bold")
 feature_italic = InlineFeature("italic")
+feature_code = InlineFeature("code")
 
 class Link(BaseInlineBlock):
 	def __init__(self, url):

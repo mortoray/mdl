@@ -57,6 +57,7 @@ class _HtmlWriter(object):
 	inline_map = {
 		'italic': 'i',
 		'bold': 'b',
+		'code': 'code',
 	}
 
 	def _write_inline( self, node ):

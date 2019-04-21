@@ -169,6 +169,8 @@ def _convert_inline( ctx, nodes_iter ):
 			feature = doc_tree.feature_bold
 		elif node.class_ == '_':
 			feature = doc_tree.feature_italic
+		elif node.class_ == '`':
+			feature = doc_tree.feature_code
 		else:
 			raise Exception("Unknown feature", node.class_)
 			

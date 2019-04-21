@@ -179,13 +179,30 @@ _syntax_annotation = re.compile( '@(\p{L}+)' )
 _syntax_rest_line = re.compile( '(.*)$', re.MULTILINE )
 
 # A feature may have any regex opening match, but requires a single character terminal
+class FeatureParse(object):
+	@classmethod
+	def open_close(class_, open_pattern, close_char ):
+		fp = FeatureParse()
+		fp.open_pattern = open_pattern
+		fp.close_char = close_char
+		fp.is_raw = False
+		return fp
+		
+	@classmethod
+	def raw(class_, open_pattern, close_char ):
+		fp = FeatureParse()
+		fp.open_pattern = open_pattern
+		fp.close_char = close_char
+		fp.is_raw = True
+		return fp
+	
 _syntax_feature = re.compile('([\*_\[\(`])')
 _syntax_feature_map = {
-	'*': '*',
-	'_': '_',
-	'`': '`',
-	'[': ']',
-	'(': ')',
+	'*': FeatureParse.open_close('*','*'),
+	'_': FeatureParse.open_close('_','_'),
+	'`': FeatureParse.raw('`','`'),
+	'[': FeatureParse.open_close('[',']'),
+	'(': FeatureParse.open_close('(',')'),
 }
 _syntax_inline_note = re.compile( '\^([\p{L}\p{N}]*)' )
 
@@ -344,10 +361,17 @@ def _parse_line( src, terminal = '\n' ):
 		if feature_match != None:
 			feature_class = feature_match.group(1)
 			end_text()
-			feature_line = _parse_line( src, _syntax_feature_map[feature_class] )
+			
+			feature_parse = _syntax_feature_map[feature_class]
+			
 			feature = Node( NodeType.inline )
 			feature.class_ = feature_class
-			feature.add_subs( feature_line )
+			if feature_parse.is_raw:
+				text = _parse_raw_escape_to( src, feature_parse.close_char )
+				feature.text = text
+			else:
+				feature_line = _parse_line( src, feature_parse.close_char )
+				feature.add_subs( feature_line )
 			push_bit( feature )
 			continue
 			
@@ -357,6 +381,20 @@ def _parse_line( src, terminal = '\n' ):
 	end_text()
 	end_bits()
 	return bits
+
+def _parse_raw_escape_to( src, close_char ):
+	text = ''
+	
+	while not src.is_at_end():
+		c = src.next_char()
+		if c == '\\':
+			c = src.next_char()
+		elif c == close_char:
+			return text
+		
+		text += c
+		
+	raise Exception( "Unclosed text feature {}".format( close_char ) )
 
 
 def _parse_para( src ):
