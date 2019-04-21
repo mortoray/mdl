@@ -39,6 +39,7 @@ class _HtmlWriter(object):
 			q( doc_tree.Link, self._write_link ) or \
 			q( doc_tree.Note, self._write_note ) or \
 			q( doc_tree.Code, self._write_code ) or \
+			q( doc_tree.List, self._write_list ) or \
 			fail()
 
 			
@@ -46,9 +47,9 @@ class _HtmlWriter(object):
 		self._write_sub( node )
 		
 	def _write_sub( self, node ):
-		self._write_list( node.sub )
+		self._write_node_list( node.sub )
 			
-	def _write_list( self, list_ ):
+	def _write_node_list( self, list_ ):
 		for sub in list_:
 			self._write_node( sub )
 
@@ -84,7 +85,7 @@ class _HtmlWriter(object):
 		self.output.write( "<section>" )
 		if node.title != None:
 			self.output.write( "<h{}>".format( node.level ) )
-			self._write_list( node.title )
+			self._write_node_list( node.title )
 			self.output.write( "</h{}>".format( node.level ) )
 		
 		self._write_sub(  node )
@@ -121,3 +122,11 @@ class _HtmlWriter(object):
 	def _write_code( self, node ):
 		self.output.write( '<pre>{}</pre>'.format( node.text ) )
 		
+
+	def _write_list( self, node ):
+		self.output.write( '<ul>' )
+		for sub in node.sub:
+			self.output.write( '<li>' )
+			self._write_node( sub )
+			self.output.write( '</li>' )
+		self.output.write( '</ul>' )

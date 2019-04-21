@@ -21,6 +21,15 @@ class _NodeIterator(object):
 			return res
 		return None
 		
+	def peek_next(self):
+		assert self._at < len(self._nodes)
+		return self._nodes[self._at]
+		
+	def if_peek_next(self):
+		if self._at >= len(self._nodes):
+			return None
+		return self._nodes[self._at]
+		
 	def next(self):
 		assert self._at < len(self._nodes)
 		res = self._nodes[self._at]
@@ -48,14 +57,15 @@ def _convert_blocks( ctx, nodes_iter ):
 	cur_out = out
 	
 	while nodes_iter.has_next():
-		node = nodes_iter.next()
+		node = nodes_iter.peek_next()
 
 		if node.type == tree_parser.NodeType.raw:
+			node = nodes_iter.next()
 			code = doc_tree.Code(node.text, node.class_)
 			cur_out.append( code )
 			
 		elif node.type == tree_parser.NodeType.block:
-			para = _convert_para( ctx, node, nodes_iter)
+			para = _convert_block( ctx, nodes_iter)
 			if isinstance(para, doc_tree.Section):
 				while para.level <= len(section_stack):
 					_ = section_stack.pop()
@@ -85,42 +95,62 @@ def _convert_inlines( ctx, node ):
 			
 	return para_subs
 
-def _convert_para( ctx, node, nodes_iter ):
-	para_subs = _convert_inlines( ctx, node )
-		
-	if node.class_.startswith( '#' ):
-		para = doc_tree.Section( len(node.class_), para_subs )
-	elif node.class_.startswith( '>' ):
-		para = doc_tree.Block( doc_tree.block_quote )
-		para.sub = para_subs
-	elif node.class_.startswith( '^' ):
-		assert node.text in ctx.open_notes
-		if len(para_subs) == 1:
-			ctx.open_notes[node.text].node = para_subs[0]
-		else:
-			para = doc_tree.Block( doc_tree.block_paragraph )
-			para.sub = para_subs
-			ctx.open_notes[node.text].node = para
-		
-		del ctx.open_notes[node.text]
-		return None
-	else:
-		class_ = None
-		
-		# TODO: probably all classes should be handled with annotations
-		blurb = node.get_annotation( "Blurb" )
-		aside = node.get_annotation( "Aside" )
-		if blurb != None:
-			class_ = doc_tree.block_blurb
-		elif aside != None:
-			class_ = doc_tree.block_aside
-		else:
-			class_ = doc_tree.block_paragraph
+def _convert_block( ctx, nodes_iter ):
+	para = None
+	para_list = None
+	
+	while True:
+		node = nodes_iter.next()
+		assert node.type == tree_parser.NodeType.block
+		para_subs = _convert_inlines( ctx, node )
 			
-		para = doc_tree.Block( class_ )
-		para.sub = para_subs
+		if node.class_.startswith( '#' ):
+			para = doc_tree.Section( len(node.class_), para_subs )
+		elif node.class_.startswith( '>' ):
+			para = doc_tree.Block( doc_tree.block_quote )
+			para.sub = para_subs
+		elif node.class_.startswith( '-' ):
+			if para_list == None:
+				para_list = doc_tree.List()
+				para = para_list
+				
+			sub_para = doc_tree.Block( doc_tree.block_paragraph )
+			sub_para.sub = para_subs
+			para_list.sub.append( sub_para )
 		
-	return para
+			next_node = nodes_iter.if_peek_next()
+			if next_node != None and next_node.type == tree_parser.NodeType.block and \
+				next_node.class_.startswith( '-' ):
+				continue
+			
+		elif node.class_.startswith( '^' ):
+			assert node.text in ctx.open_notes
+			if len(para_subs) == 1:
+				ctx.open_notes[node.text].node = para_subs[0]
+			else:
+				para = doc_tree.Block( doc_tree.block_paragraph )
+				para.sub = para_subs
+				ctx.open_notes[node.text].node = para
+			
+			del ctx.open_notes[node.text]
+			return None
+		else:
+			class_ = None
+			
+			# TODO: probably all classes should be handled with annotations
+			blurb = node.get_annotation( "Blurb" )
+			aside = node.get_annotation( "Aside" )
+			if blurb != None:
+				class_ = doc_tree.block_blurb
+			elif aside != None:
+				class_ = doc_tree.block_aside
+			else:
+				class_ = doc_tree.block_paragraph
+				
+			para = doc_tree.Block( class_ )
+			para.sub = para_subs
+			
+		return para
 	
 def _convert_inline( ctx, nodes_iter ):
 	node = nodes_iter.next()
