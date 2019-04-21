@@ -5,13 +5,38 @@ from . import tree_parser
 class _ConvertContext(object):
 	def __init__(self):
 		self.open_notes = {}
+
+"""
+An iterator for the nodes that allows for nested iteration and peeking.
+"""
+class _NodeIterator(object):
+	def __init__(self, nodes):
+		self._nodes = list( nodes )
+		self._at = 0
 		
+	def if_next(self):
+		if self._at < len(self._nodes):
+			res = self._nodes[self._at]
+			self._at += 1
+			return res
+		return None
+		
+	def next(self):
+		assert self._at < len(self._nodes)
+		res = self._nodes[self._at]
+		self._at += 1
+		return res
+		
+	def has_next(self):
+		return self._at < len(self._nodes)
+		
+	
 def convert( node ):
 	assert node.type == tree_parser.NodeType.container
 	
 	ctx = _ConvertContext()
 	root = doc_tree.Section(0)
-	root.sub = _convert_blocks( ctx, node.iter_sub() )
+	root.sub = _convert_blocks( ctx, _NodeIterator(node.iter_sub()) )
 	
 	return root
 	
@@ -22,14 +47,15 @@ def _convert_blocks( ctx, nodes_iter ):
 	section_stack = []
 	cur_out = out
 	
-	for node in nodes_iter:
+	while nodes_iter.has_next():
+		node = nodes_iter.next()
 
 		if node.type == tree_parser.NodeType.raw:
 			code = doc_tree.Code(node.text, node.class_)
 			cur_out.append( code )
 			
 		elif node.type == tree_parser.NodeType.block:
-			para = _convert_para( ctx, node)
+			para = _convert_para( ctx, node, nodes_iter)
 			if isinstance(para, doc_tree.Section):
 				while para.level <= len(section_stack):
 					_ = section_stack.pop()
@@ -51,16 +77,15 @@ def _convert_blocks( ctx, nodes_iter ):
 
 def _convert_inlines( ctx, node ):
 	para_subs = []
-	next_node = 0
-	subs = node.iter_sub()
-	while next_node < len(subs):
-		(next_node, para) = _convert_inline( ctx, next_node, subs )
+	nodes_iter = _NodeIterator( node.iter_sub() )
+	while nodes_iter.has_next():
+		para = _convert_inline( ctx, nodes_iter )
 		if para != None:
 			para_subs.append( para )
 			
 	return para_subs
 
-def _convert_para( ctx, node ):
+def _convert_para( ctx, node, nodes_iter ):
 	para_subs = _convert_inlines( ctx, node )
 		
 	if node.class_.startswith( '#' ):
@@ -97,22 +122,18 @@ def _convert_para( ctx, node ):
 		
 	return para
 	
-def _convert_inline( ctx, node_offset, nodes ):
-	node = nodes[node_offset]
-	node_offset += 1
-	
-	def get_next_node():
-		return nodes[node_offset] if node_offset < len(nodes) else None
+def _convert_inline( ctx, nodes_iter ):
+	node = nodes_iter.next()
 	
 	if node.type == tree_parser.NodeType.text:
-		return (node_offset, doc_tree.Text( node.text ))
+		return doc_tree.Text( node.text )
 		
 	if node.type == tree_parser.NodeType.inline:
 		if node.class_ == '[':
-			return (node_offset, _convert_link( ctx, node ))
+			return _convert_link( ctx, node )
 
 		if node.class_ == '^':
-			return _convert_note( ctx, node, node_offset, nodes )
+			return _convert_note( ctx, node, nodes_iter )
 			
 		if node.class_ == '*':
 			feature = doc_tree.feature_bold
@@ -124,29 +145,24 @@ def _convert_inline( ctx, node_offset, nodes ):
 		block = doc_tree.Inline(feature)
 		block.sub = _convert_inlines(ctx, node)
 		
-		return (node_offset, block)
+		return block
 		
 	raise Exception("Unexpected node type" )
 
-def _convert_note( ctx, node, next_offset, nodes ):
-	# TODO: duplicate with above... need an iterator of some kind
-	def get_next_node():
-		return nodes[next_offset] if next_offset < len(nodes) else None
-		
+def _convert_note( ctx, node, nodes_iter ):
 	if len(node.text) > 0:
 		if node.text in ctx.open_notes:
 			raise Exception( "There's already a footnote reference with name {}".format( node.text ) )
 		
 		empty_note = doc_tree.Note(None) #incomplete for now
 		ctx.open_notes[node.text] = empty_note
-		return (next_offset, empty_note)
+		return empty_note
 		
 	else:
-		next_node = get_next_node()
-		assert next_node != None
+		next_node = nodes_iter.next()
 		
 		link = _convert_link( ctx, next_node )
-		return (next_offset+1, doc_tree.Note(link))
+		return doc_tree.Note(link)
 
 
 def _collapse_text( ctx, node ):

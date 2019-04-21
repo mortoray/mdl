@@ -171,7 +171,7 @@ def parse_file( filename ):
 	
 	return root
 
-_syntax_line = re.compile( '(?!//)(#+|---|/)' )
+_syntax_line = re.compile( '(?!//)(#+|-|---|/)' )
 _syntax_block = re.compile( '(>|>>|//|\^([\p{L}\p{N}]*))' )
 _syntax_raw = re.compile( '(```)' )
 _syntax_raw_end = re.compile( '(^```)', re.MULTILINE )

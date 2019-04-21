@@ -59,6 +59,9 @@ class Section(BaseBlock):
 		self.title = title_text_block #TODO: is this supposed to be an array?
 		self.level = level
 
+class List(BaseBlock):
+	def __init__(self):
+		super().__init__()
 
 class InlineFeature(object):
 	def __init__(self, name):
