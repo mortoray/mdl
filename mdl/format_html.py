@@ -32,14 +32,15 @@ class _HtmlWriter(object):
 		def fail():
 			raise Exception( "Unknown node type", node )
 		
-		_ = q( doc_tree.Inline, self._write_inline ) or \
-			q( doc_tree.Section, self._write_section ) or \
+		_ = \
 			q( doc_tree.Block, self._write_block ) or \
-			q( doc_tree.Text, self._write_text ) or \
-			q( doc_tree.Link, self._write_link ) or \
-			q( doc_tree.Note, self._write_note ) or \
 			q( doc_tree.Code, self._write_code ) or \
+			q( doc_tree.Inline, self._write_inline ) or \
+			q( doc_tree.Link, self._write_link ) or \
 			q( doc_tree.List, self._write_list ) or \
+			q( doc_tree.Note, self._write_note ) or \
+			q( doc_tree.Section, self._write_section ) or \
+			q( doc_tree.Text, self._write_text ) or \
 			fail()
 
 			
