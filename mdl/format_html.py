@@ -43,9 +43,6 @@ class _HtmlWriter(object):
 			fail()
 
 			
-	def _write_block( self, node ):
-		self._write_sub( node )
-		
 	def _write_sub( self, node ):
 		self._write_node_list( node.sub )
 			
@@ -127,7 +124,10 @@ class _HtmlWriter(object):
 	def _write_list( self, node ):
 		self.output.write( '<ul>' )
 		for sub in node.sub:
+			assert isinstance( sub, doc_tree.Block ) # The only supported type
+			assert sub.class_ == doc_tree.block_paragraph
+			
 			self.output.write( '<li>' )
-			self._write_node( sub )
+			self._write_sub( sub )
 			self.output.write( '</li>' )
 		self.output.write( '</ul>' )
