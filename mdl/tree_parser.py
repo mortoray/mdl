@@ -36,6 +36,9 @@ class Node(object):
 		self._attr = None
 		self._annotations = None
 		
+	def __str__( self ):
+		return "{}@{} \"{}\"".format( self._type, self._class_, self._text )
+		
 	def add_sub( self, sub ):
 		if self._type == NodeType.text:
 			raise Exception( "The text type should not have children" )
@@ -202,7 +205,7 @@ _syntax_feature_map = {
 	'_': FeatureParse.open_close('_','_'),
 	'`': FeatureParse.raw('`','`'),
 	'[': FeatureParse.open_close('[',']'),
-	'(': FeatureParse.open_close('(',')'),
+	'(': FeatureParse.raw('(',')'),
 }
 _syntax_inline_note = re.compile( '\^([\p{L}\p{N}]*)' )
 
@@ -311,23 +314,6 @@ def _parse_line( src, terminal = '\n' ):
 			push_bit(bit)
 			
 	def push_bit(bit):
-		# check for compound bits
-		trail_bit = bit.type == NodeType.inline and bit.class_ == '('
-			
-		if len(bits) > 0 and bits[-1].type == NodeType.inline and bits[-1].class_ == '[' and not bits[-1].has_attr():
-			# not continued, then collapse the bit to normal text
-			# FEATURE: cleaner collapse
-			if trail_bit:
-				bits[-1].add_attr( bit )
-				return
-			else:
-				push_bits( _expand_false_node( bits.pop() ) )
-				
-		elif trail_bit:
-			push_bits( _expand_false_node( bit ) )
-			return
-			
-			
 		if bit.type == NodeType.text and len(bits) > 0 and bits[-1].type == NodeType.text:
 			bits[-1].text += bit.text
 		else:
@@ -367,8 +353,8 @@ def _parse_line( src, terminal = '\n' ):
 			feature = Node( NodeType.inline )
 			feature.class_ = feature_class
 			if feature_parse.is_raw:
-				text = _parse_raw_escape_to( src, feature_parse.close_char )
-				feature.text = text
+				feature_text = _parse_raw_escape_to( src, feature_parse.close_char )
+				feature.text = feature_text
 			else:
 				feature_line = _parse_line( src, feature_parse.close_char )
 				feature.add_subs( feature_line )

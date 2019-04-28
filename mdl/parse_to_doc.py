@@ -160,7 +160,7 @@ def _convert_inline( ctx, nodes_iter ):
 		
 	if node.type == tree_parser.NodeType.inline:
 		if node.class_ == '[':
-			return _convert_link( ctx, node )
+			return _convert_link( ctx, node, nodes_iter )
 
 		if node.class_ == '^':
 			return _convert_note( ctx, node, nodes_iter )
@@ -176,6 +176,10 @@ def _convert_inline( ctx, nodes_iter ):
 			
 		block = doc_tree.Inline(feature)
 		block.sub = _convert_inlines(ctx, node)
+		
+		if len(node.text) != 0:
+			assert len(block.sub) == 0
+			block.sub.append( doc_tree.Text( node.text ) )
 		
 		return block
 		
@@ -205,9 +209,11 @@ def _collapse_text( ctx, node ):
 	return text
 
 
-def _convert_link( ctx, node ):
-	attrs = node.get_attrs()
-	url = _collapse_text( ctx, attrs[0] ) #TODO: proper iter
+def _convert_link( ctx, node, nodes_iter ):
+	url_node = nodes_iter.next()
+	if url_node.class_ != '(':
+		raise Exception( "Unexpected node following anchor: " + str(url_node) )
+	url = url_node.text
 
 	block = doc_tree.Link(url)
 	block.sub = _convert_inlines(ctx, node)
