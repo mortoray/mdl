@@ -13,7 +13,7 @@ With *bold* text.
 > Quote
 block wtih *bold and _italic_ inside*
 
------ Invalid text, but parsed. (extra -'s should be allowed?)
+----- Invalid text, but parsed. \(extra -'s should be allowed?)
  
 After separator. And with an \*escaped\* bit.
 

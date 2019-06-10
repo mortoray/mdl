@@ -125,10 +125,14 @@ class _HtmlWriter(object):
 	def _write_list( self, node ):
 		self.output.write( '<ul>' )
 		for sub in node.sub:
-			assert isinstance( sub, doc_tree.Block ) # The only supported type
-			assert sub.class_ == doc_tree.block_paragraph
+			assert isinstance( sub, doc_tree.ListItem )
 			
 			self.output.write( '<li>' )
-			self._write_sub( sub )
+			first_child = sub.sub[0] if len(sub.sub) > 0 else None
+			# Collapse single paragraphs into the list item itself
+			if first_child != None and isinstance( first_child, doc_tree.Block ) and first_child.class_ == doc_tree.block_paragraph:
+				self._write_sub( sub )
+			else:
+				self._write_node( sub )
 			self.output.write( '</li>' )
 		self.output.write( '</ul>' )

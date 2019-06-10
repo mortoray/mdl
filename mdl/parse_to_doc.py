@@ -116,7 +116,10 @@ def _convert_block( ctx, nodes_iter ):
 				
 			sub_para = doc_tree.Block( doc_tree.block_paragraph )
 			sub_para.sub = para_subs
-			para_list.sub.append( sub_para )
+			
+			list_item = doc_tree.ListItem( )
+			list_item.sub.append( sub_para )
+			para_list.sub.append( list_item )
 		
 			next_node = nodes_iter.if_peek_next()
 			if next_node != None and next_node.type == tree_parser.NodeType.block and \
@@ -220,3 +223,4 @@ def _convert_link( ctx, node, nodes_iter ):
 		
 	return block
 	
+

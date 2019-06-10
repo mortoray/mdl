@@ -63,6 +63,10 @@ class List(BaseBlock):
 	def __init__(self):
 		super().__init__()
 
+class ListItem(BaseBlock):
+	def __init__(self):
+		super().__init__()
+		
 class InlineFeature(object):
 	def __init__(self, name):
 		self.name = name

@@ -17,6 +17,8 @@ def get(node, indent = ''):
 		return get_note(node, indent)
 	if isinstance(node, doc_tree.List):
 		return get_list(node, indent)
+	if isinstance(node, doc_tree.ListItem):
+		return get_list_item(node, indent)
 		
 	if isinstance(node, doc_tree.Block):
 		return get_block(node, indent)
@@ -72,3 +74,5 @@ def get_note(node, indent):
 def get_list(node, indent):
 	return '{}<List>\n{}'.format( indent, get_all(node.sub, indent + '\t') )
 	
+def get_list_item(node, indent):
+	return '{}<ListItem>\n{}'.format( indent, get_all(node.sub, indent + '\t') )
