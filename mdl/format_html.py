@@ -41,11 +41,12 @@ class _HtmlWriter(object):
 			q( doc_tree.Note, self._write_note ) or \
 			q( doc_tree.Section, self._write_section ) or \
 			q( doc_tree.Text, self._write_text ) or \
+			q( doc_tree.Paragraph, self._write_paragraph ) or \
 			fail()
 
 			
 	def _write_sub( self, node ):
-		self._write_node_list( node.sub )
+		self._write_node_list( node.iter_sub() )
 			
 	def _write_node_list( self, list_ ):
 		for sub in list_:
@@ -80,11 +81,17 @@ class _HtmlWriter(object):
 		self._write_sub( node )
 		self.output.write( "</{}>".format(tag) )
 		
+	def _write_paragraph( self, node ):
+		self.output.write( "<p>" )
+		self._write_sub( node )
+		self.output.write( "</p>" )
+		
+		
 	def _write_section( self, node ):
 		self.output.write( "<section>" )
 		if node.title != None:
 			self.output.write( "<h{}>".format( node.level ) )
-			self._write_node_list( node.title )
+			self._write_node( node.title )
 			self.output.write( "</h{}>".format( node.level ) )
 		
 		self._write_sub(  node )
@@ -124,15 +131,10 @@ class _HtmlWriter(object):
 
 	def _write_list( self, node ):
 		self.output.write( '<ul>' )
-		for sub in node.sub:
+		for sub in node.iter_sub():
 			assert isinstance( sub, doc_tree.ListItem )
 			
 			self.output.write( '<li>' )
-			first_child = sub.sub[0] if len(sub.sub) > 0 else None
-			# Collapse single paragraphs into the list item itself
-			if first_child != None and isinstance( first_child, doc_tree.Block ) and first_child.class_ == doc_tree.block_paragraph:
-				self._write_sub( sub )
-			else:
-				self._write_node( sub )
+			self._write_sub( sub )
 			self.output.write( '</li>' )
 		self.output.write( '</ul>' )

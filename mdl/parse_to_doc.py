@@ -45,7 +45,8 @@ def convert( node ):
 	
 	ctx = _ConvertContext()
 	root = doc_tree.Section(0)
-	root.sub = _convert_blocks( ctx, _NodeIterator(node.iter_sub()) )
+	subs = _convert_blocks( ctx, _NodeIterator(node.iter_sub()) )
+	root.add_subs( subs )
 	
 	return root
 	
@@ -55,6 +56,24 @@ def _convert_blocks( ctx, nodes_iter ):
 	
 	section_stack = []
 	cur_out = out
+	
+	def append_block( para ):
+		nonlocal cur_out
+		if isinstance(para, doc_tree.Section):
+			while para.level <= len(section_stack):
+				_ = section_stack.pop()
+			
+			if len(section_stack) > 0:
+				cur_out = section_stack[-1]._sub #TODO: fix!
+			else:
+				cur_out = out
+			
+			cur_out.append( para )
+			section_stack.append( para )
+			cur_out = para._sub #TODO: Fix!
+		elif para != None:
+			cur_out.append( para )
+
 	
 	while nodes_iter.has_next():
 		node = nodes_iter.peek_next()
@@ -66,20 +85,18 @@ def _convert_blocks( ctx, nodes_iter ):
 			
 		elif node.type == tree_parser.NodeType.block:
 			para = _convert_block( ctx, nodes_iter)
-			if isinstance(para, doc_tree.Section):
-				while para.level <= len(section_stack):
-					_ = section_stack.pop()
+			append_block( para )
 				
-				if len(section_stack) > 0:
-					cur_out = section_stack[-1].sub
-				else:
-					cur_out = out
-				
-				cur_out.append( para )
-				section_stack.append( para )
-				cur_out = para.sub
-			elif para != None:
-				cur_out.append( para )
+		elif node.type == tree_parser.NodeType.container:
+			node = nodes_iter.next()
+			sub_blocks = _convert_blocks( ctx, _NodeIterator(node.iter_sub()) )
+			assert len(sub_blocks) > 0
+			root_block = sub_blocks[0]
+			assert root_block.is_block_container
+			for i in range(1, len(sub_blocks)):
+				root_block.sub.append( sub_blocks[i] )
+			append_block( sub_blocks[0] )
+			
 		else:
 			raise Exception("Unexpected block type", node)
 			
@@ -105,7 +122,7 @@ def _convert_block( ctx, nodes_iter ):
 		para_subs = _convert_inlines( ctx, node )
 			
 		if node.class_.startswith( '#' ):
-			para = doc_tree.Section( len(node.class_), para_subs )
+			para = doc_tree.Section( len(node.class_), doc_tree.Paragraph( para_subs )  )
 		elif node.class_.startswith( '>' ):
 			para = doc_tree.Block( doc_tree.block_quote )
 			para.sub = para_subs
@@ -114,12 +131,11 @@ def _convert_block( ctx, nodes_iter ):
 				para_list = doc_tree.List()
 				para = para_list
 				
-			sub_para = doc_tree.Block( doc_tree.block_paragraph )
-			sub_para.sub = para_subs
+			sub_para = doc_tree.Paragraph( para_subs )
 			
 			list_item = doc_tree.ListItem( )
-			list_item.sub.append( sub_para )
-			para_list.sub.append( list_item )
+			list_item.add_sub( sub_para )
+			para_list.add_sub( list_item )
 		
 			next_node = nodes_iter.if_peek_next()
 			if next_node != None and next_node.type == tree_parser.NodeType.block and \
@@ -131,27 +147,21 @@ def _convert_block( ctx, nodes_iter ):
 			if len(para_subs) == 1:
 				ctx.open_notes[node.text].node = para_subs[0]
 			else:
-				para = doc_tree.Block( doc_tree.block_paragraph )
-				para.sub = para_subs
+				para = doc_tree.Paragraph()
+				para._sub = para_subs
 				ctx.open_notes[node.text].node = para
 			
 			del ctx.open_notes[node.text]
 			return None
 		else:
-			class_ = None
-			
 			# TODO: probably all classes should be handled with annotations
 			blurb = node.get_annotation( "Blurb" )
 			aside = node.get_annotation( "Aside" )
+			para = doc_tree.Paragraph( para_subs )
 			if blurb != None:
-				class_ = doc_tree.block_blurb
+				para = doc_tree.Block( doc_tree.block_blurb, [para] )
 			elif aside != None:
-				class_ = doc_tree.block_aside
-			else:
-				class_ = doc_tree.block_paragraph
-				
-			para = doc_tree.Block( class_ )
-			para.sub = para_subs
+				para = doc_tree.Block( doc_tree.block_aside, [para]  )
 			
 		return para
 	

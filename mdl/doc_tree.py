@@ -3,14 +3,71 @@
 """
 Base node types form the doc type tree. They should not be instantiated.
 """
+import typing
 
-class BaseBlock(object):
-	def __init__(self):
-		self.sub = []
+class BlockNode(object):
+	pass
+	
+class BaseBlock(BlockNode):
+	def __init__(self, subs : typing.List['BlockNode'] = []):
+		self._sub : typing.List['BlockNode'] = []
+		self.add_subs( subs )
+
+	def _validate_sub( self, sub : BlockNode ) -> None:
+		assert isinstance( sub, BlockNode ), sub
+	
+	def add_sub( self, sub : BlockNode ) -> None:
+		self._validate_sub( sub )
+		self._sub.append( sub )
 		
-class BaseInlineBlock(BaseBlock):
-	def __init__(self):
-		super().__init__()
+	def add_subs( self, subs : typing.List['BlockNode'] ) -> None:
+		for sub in subs:
+			self.add_sub( sub )
+			
+	def iter_sub( self ):
+		return self._sub
+
+		
+class ParagraphElement(object):
+	def __init__(self, subs = []):
+		self._sub : typing.List['ParagraphElement'] = []
+		self.add_subs( subs )
+		
+	def _validate_sub( self, sub ):
+		assert isinstance( sub, ParagraphElement ), sub
+		
+	def add_sub( self, sub : 'ParagraphElement' ):
+		self._validate_sub( sub )
+		self._sub.append( sub )
+		
+	def add_subs( self, subs : typing.List['ParagraphElement'] ) -> None:
+		for sub in subs:
+			self.add_sub( sub )
+			
+	def iter_sub( self ):
+		return self._sub
+		
+		
+class Paragraph(BlockNode):
+	def __init__(self, subs = []):
+		self._sub : typing.List[ParagraphElement] = []
+		self.add_subs( subs )
+		
+	def _validate_sub( self, sub ):
+		assert isinstance( sub, ParagraphElement ), sub
+		
+	def add_sub( self, sub : ParagraphElement  ):
+		self._validate_sub( sub )
+		self._sub.append( sub )
+		
+	def add_subs( self, subs : typing.List['ParagraphElement'] ) -> None:
+		for sub in subs:
+			self.add_sub( sub )
+			
+	def iter_sub( self ):
+		return self._sub
+		
+		
 		
 # TODO: these "Empty" names are yucky
 class BaseInlineEmpty(object):
@@ -25,8 +82,8 @@ class BaseBlockEmpty(object):
 Leaf types may only inherit from Base node types. This prevents collision on simple visitors, as well as keeping the "is-a" relationships clean.
 """
 class Block(BaseBlock):
-	def __init__(self, class_):
-		super().__init__()
+	def __init__(self, class_, subs = []):
+		super().__init__( subs )
 		self._class_ = class_
 		
 	@property
@@ -38,16 +95,16 @@ class BlockClass(object):
 	def __init__(self, name):
 		self.name = name
 		
-block_paragraph = BlockClass('paragraph')
 block_quote = BlockClass('quote')
 block_blurb = BlockClass('blurb')
 block_aside = BlockClass('aside')
 		
-class Text(object):
+		
+class Text(ParagraphElement):
 	def __init__(self, text):
 		self.text = text
 		
-class Inline(BaseInlineBlock):
+class Inline(ParagraphElement):
 	def __init__(self, feature):
 		super().__init__()
 		assert isinstance(feature, InlineFeature)
@@ -56,12 +113,17 @@ class Inline(BaseInlineBlock):
 class Section(BaseBlock):
 	def __init__(self, level, title_text_block = None ):
 		super().__init__()
+		assert title_text_block == None or isinstance( title_text_block, Paragraph ) 
 		self.title = title_text_block #TODO: is this supposed to be an array?
 		self.level = level
 
 class List(BaseBlock):
 	def __init__(self):
 		super().__init__()
+		
+	def _validate_sub( self, sub ):
+		super()._validate_sub( sub )
+		assert isinstance( sub, ListItem )
 
 class ListItem(BaseBlock):
 	def __init__(self):
@@ -75,7 +137,7 @@ feature_bold = InlineFeature("bold")
 feature_italic = InlineFeature("italic")
 feature_code = InlineFeature("code")
 
-class Link(BaseInlineBlock):
+class Link(ParagraphElement):
 	def __init__(self, url):
 		super().__init__()
 		self.url = url

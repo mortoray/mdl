@@ -6,7 +6,7 @@ def dump(node, indent = ''):
 def get(node, indent = ''):
 	if node == None:
 		return '** NONE **'
-		
+
 	if isinstance(node, doc_tree.Section):
 		return get_section(node, indent)
 	if isinstance(node, doc_tree.Inline):
@@ -24,6 +24,8 @@ def get(node, indent = ''):
 		return get_block(node, indent)
 	if isinstance(node, doc_tree.Text):
 		return get_text(node, indent)
+	if isinstance(node, doc_tree.Paragraph):
+		return get_paragraph(node, indent)
 	
 	raise Exception( "Unsupported type", node )
 
@@ -45,7 +47,7 @@ def get_all(nodes, indent):
 def _get_sub(node, indent):
 	indent += '\t'
 	txt = indent
-	for sub in node.sub:
+	for sub in node.iter_sub():
 		txt += get(sub)
 	txt += '\n'
 	return txt
@@ -55,24 +57,29 @@ def get_block(node, indent):
 	txt += _get_sub(node, indent)
 	return txt
 	
+def get_paragraph(node, indent):
+	txt = "{}<Paragraph>\n".format( indent )
+	txt += _get_sub(node, indent)
+	return txt
+	
 def get_text(node, indent):
 	return node.text
 	
 def get_section(node, indent):
-	return '{}<Section:{}> {}\n{}'.format( indent, node.level, 
-		get_all_inline(node.title), get_all(node.sub, indent + '\t') )
+	return '{}<Section:{}>\n{}\n{}'.format( indent, node.level, 
+		get(node.title, indent + '\t|'), get_all(node._sub, indent + '\t') )
 	
 def get_inline(node, indent):
-	return '%{}/{}/'.format( node.feature.name, get_all_inline(node.sub) )
+	return '%{}/{}/'.format( node.feature.name, get_all_inline(node._sub) )
 
 def get_link(node, indent):
-	return '%link{{url={}}}/{}/'.format( node.url, get_all_inline(node.sub) )
+	return '%link{{url={}}}/{}/'.format( node.url, get_all_inline(node._sub) )
 
 def get_note(node, indent):
 	return '^{{{}}}'.format( get(node.node) )
 	
 def get_list(node, indent):
-	return '{}<List>\n{}'.format( indent, get_all(node.sub, indent + '\t') )
+	return '{}<List>\n{}'.format( indent, get_all(node._sub, indent + '\t') )
 	
 def get_list_item(node, indent):
-	return '{}<ListItem>\n{}'.format( indent, get_all(node.sub, indent + '\t') )
+	return '{}<ListItem>\n{}'.format( indent, get_all(node._sub, indent + '\t') )

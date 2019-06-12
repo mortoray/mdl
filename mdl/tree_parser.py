@@ -1,9 +1,9 @@
 # Tree parsing
-import regex as re
+import regex as re # type: ignore
 from enum import Enum
 
 class NodeType(Enum):
-	# may contain blocks as children
+	# may contain blocks and containers as children
 	container = 1
 	# may contain text and inline as children
 	block = 2
@@ -39,16 +39,15 @@ class Node(object):
 	def __str__( self ):
 		return "{}@{} \"{}\"".format( self._type, self._class_, self._text )
 		
-	def add_sub( self, sub ):
+	def validate_sub( self, sub ):
 		if self._type == NodeType.text:
 			raise Exception( "The text type should not have children" )
-		if self._type == NodeType.container and not sub._type in [NodeType.block, NodeType.raw]:
+		if self._type == NodeType.container and not sub._type in [NodeType.block, NodeType.raw, NodeType.container]:
 			raise Exception( "containers can only contain blocks/raw" )
 		if self._type in [NodeType.block, NodeType.inline] and not sub._type in [NodeType.inline, NodeType.text]:
 			raise Exception( "blocks/inlines can only contain inline/text" )
 			
 		assert isinstance(sub, Node)
-		self._sub.append( sub )
 		
 	def add_annotations( self, annotations ):
 		if len(annotations) == 0:
@@ -65,9 +64,24 @@ class Node(object):
 				return anno
 		return None
 		
+	def promote_to_container( self ):
+		first_child = Node( self._type )
+		first_child._text = self._text
+		self._text = ''
+
+		first_child._sub = self._sub
+		self._sub = [first_child]
+		
+		self._type = NodeType.container
+		
+	
 	def add_subs( self, subs ):
 		for sub in subs:
 			self.add_sub( sub )
+			
+	def add_sub( self, sub ):
+		self.validate_sub( sub )
+		self._sub.append( sub )
 			
 	# As Python lacks a random access iterator, this returns a list view of the subs, it should not be modified
 	def iter_sub( self ):
@@ -132,9 +146,7 @@ class Source(object):
 		self._at = 0
 		self._size = len(text)
 		
-	def skip_space(self):
-		pass
-		
+	
 	def is_at_end(self):
 		return self._at >= self._size
 		
@@ -150,6 +162,10 @@ class Source(object):
 		m = re.match( self._text, self._at )
 		if m != None:
 			self._at = m.end()
+		return m
+		
+	def peak_match( self, re ):
+		m = re.match( self._text, self._at )
 		return m
 		
 	def to_match( self, re ):
@@ -170,10 +186,11 @@ def parse_file( filename ):
 	in_source = Source(in_text)
 	
 	root = Node(NodeType.container)
-	root.add_subs( _parse_blocks( in_source ) )
-	
+	_parse_container( root, in_source, '' )
 	return root
 
+	
+_syntax_lead_space = re.compile( '([\p{Space_Separator}\t]*)' )
 _syntax_line = re.compile( '(?!//)(#+|-|/)' )
 _syntax_block = re.compile( '(>|>>|//|\^([\p{L}\p{N}]*))' )
 _syntax_raw = re.compile( '(```)' )
@@ -209,19 +226,31 @@ _syntax_feature_map = {
 }
 _syntax_inline_note = re.compile( '\^([\p{L}\p{N}]*)' )
 
-def _parse_blocks( src ):
-	nodes = []
+def _parse_container( root, src, indent ):
 	annotations = []
+	blocks = []
 
 	def append_block( block ):
 		nonlocal annotations
 		
 		block.add_annotations( annotations )
 		annotations = []
-		nodes.append( block )
+		blocks.append( block )
 		
 	while not src.is_at_end():
-		c = src.peek_char()
+		lead_space = src.peak_match( _syntax_lead_space ).group(1)
+		#print( "LS:{}:".format( lead_space ) )
+		if lead_space != indent:
+			# TODO: add some strong rules about what's allowed here
+			if len(lead_space) < len(indent):
+				break
+			if len(lead_space) > len(indent):
+				assert len(blocks) > 0
+				child_container = blocks[-1]
+				child_container.promote_to_container()
+				_parse_container( child_container, src, lead_space )
+				
+			continue
 		
 		annotation_match = src.match( _syntax_annotation )
 		if annotation_match != None:
@@ -275,8 +304,9 @@ def _parse_blocks( src ):
 		# drop empty paragraphs
 		if not para.sub_is_empty():
 			append_block( para )
+
 			
-	return nodes
+	root.add_subs( blocks )
 	
 
 def _expand_false_node(node):

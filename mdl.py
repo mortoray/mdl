@@ -7,6 +7,7 @@ import argparse, os
 
 from mdl import tree_parser, parse_to_doc, doc_tree_dump, format_html, format_markdown
 
+#class MyParser(argparse.Ar
 cli_args = argparse.ArgumentParser( description = 'Process and MDL document' )
 cli_args.add_argument( '--dump-parse', action='store_const', const=True, help='Dump the parse tree' )
 cli_args.add_argument( '--dump-doc', action='store_const', const=True, help='Dump the document tree' )
