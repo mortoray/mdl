@@ -52,6 +52,19 @@ class _HtmlWriter(object):
 		for sub in list_:
 			self._write_node( sub )
 
+	"""
+		HTML Flow can contain inline elements or Text. For rendering we'll use this to collapse the first paragraph into inline text, which is the most expected output.
+	"""
+	def _write_flow( self, node_list ):
+		first = True
+		for node in node_list:
+			if first and isinstance( node, doc_tree.Paragraph ):
+				self._write_node_list( node.iter_sub() )
+			else:
+				self._write_node( node )
+			
+			first = False
+	
 	# TODO: yucky string constants 
 	inline_map = {
 		'italic': 'i',
@@ -80,7 +93,7 @@ class _HtmlWriter(object):
 		self.output.write( "<{} class='{}'>".format(tag, class_) )
 		self._write_sub( node )
 		self.output.write( "</{}>".format(tag) )
-		
+	
 	def _write_paragraph( self, node ):
 		self.output.write( "<p>" )
 		self._write_sub( node )
@@ -88,11 +101,13 @@ class _HtmlWriter(object):
 		
 		
 	def _write_section( self, node ):
+		level_adjust = 2
+		
 		self.output.write( "<section>" )
 		if node.title != None:
-			self.output.write( "<h{}>".format( node.level ) )
-			self._write_node( node.title )
-			self.output.write( "</h{}>".format( node.level ) )
+			self.output.write( "<h{}>".format( node.level + level_adjust ) )
+			self._write_flow( node.title )
+			self.output.write( "</h{}>".format( node.level + level_adjust ) )
 		
 		self._write_sub(  node )
 		self.output.write( "</section>" )
@@ -135,6 +150,6 @@ class _HtmlWriter(object):
 			assert isinstance( sub, doc_tree.ListItem )
 			
 			self.output.write( '<li>' )
-			self._write_sub( sub )
+			self._write_flow( sub.iter_sub() )
 			self.output.write( '</li>' )
 		self.output.write( '</ul>' )

@@ -157,7 +157,6 @@ def _convert_block( ctx, nodes_iter, prev_in_section ):
 			elif aside != None:
 				para = doc_tree.Block( doc_tree.block_aside, para  )
 			else:
-				print(para_subs)
 				assert len(para_subs) == 1
 				para = para_subs[0]
 			
@@ -227,7 +226,7 @@ def _convert_link( ctx, node, nodes_iter ):
 	url = url_node.text
 
 	block = doc_tree.Link(url)
-	block.sub = _convert_inlines(ctx, node)
+	block.add_subs( _convert_inlines(ctx, node) )
 		
 	return block
 	

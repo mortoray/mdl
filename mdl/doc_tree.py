@@ -113,8 +113,7 @@ class Inline(ParagraphElement):
 class Section(BaseBlock):
 	def __init__(self, level, title_text_block = None ):
 		super().__init__()
-		assert title_text_block == None or isinstance( title_text_block, Paragraph ) 
-		self.title = title_text_block #TODO: is this supposed to be an array?
+		self.title = title_text_block
 		self.level = level
 
 class List(BaseBlock):
