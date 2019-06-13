@@ -56,9 +56,10 @@ def _convert_blocks( ctx, nodes_iter ):
 	
 	section_stack = []
 	cur_out = out
+	prev_in_section = None
 	
 	def append_block( para ):
-		nonlocal cur_out
+		nonlocal cur_out, prev_in_section
 		if isinstance(para, doc_tree.Section):
 			while para.level <= len(section_stack):
 				_ = section_stack.pop()
@@ -71,8 +72,10 @@ def _convert_blocks( ctx, nodes_iter ):
 			cur_out.append( para )
 			section_stack.append( para )
 			cur_out = para._sub #TODO: Fix!
+			prev_in_section = None if len(cur_out) == 0 else cur_out[-1]
 		elif para != None:
 			cur_out.append( para )
+			prev_in_section = para
 
 	
 	while nodes_iter.has_next():
@@ -81,21 +84,15 @@ def _convert_blocks( ctx, nodes_iter ):
 		if node.type == tree_parser.NodeType.raw:
 			node = nodes_iter.next()
 			code = doc_tree.Code(node.text, node.class_)
-			cur_out.append( code )
+			append_block( code )
 			
 		elif node.type == tree_parser.NodeType.block:
-			para = _convert_block( ctx, nodes_iter)
+			para = _convert_block( ctx, nodes_iter, prev_in_section )
 			append_block( para )
 				
 		elif node.type == tree_parser.NodeType.container:
-			node = nodes_iter.next()
-			sub_blocks = _convert_blocks( ctx, _NodeIterator(node.iter_sub()) )
-			assert len(sub_blocks) > 0
-			root_block = sub_blocks[0]
-			assert root_block.is_block_container
-			for i in range(1, len(sub_blocks)):
-				root_block.sub.append( sub_blocks[i] )
-			append_block( sub_blocks[0] )
+			para = _convert_block( ctx, nodes_iter, prev_in_section )
+			append_block( para )
 			
 		else:
 			raise Exception("Unexpected block type", node)
@@ -112,37 +109,12 @@ def _convert_inlines( ctx, node ):
 			
 	return para_subs
 
-def _convert_block( ctx, nodes_iter ):
+def _convert_block( ctx, nodes_iter, prev_in_section ):
 	para = None
-	para_list = None
 	
 	while True:
 		node = nodes_iter.next()
-		assert node.type == tree_parser.NodeType.block
-		para_subs = _convert_inlines( ctx, node )
-			
-		if node.class_.startswith( '#' ):
-			para = doc_tree.Section( len(node.class_), doc_tree.Paragraph( para_subs )  )
-		elif node.class_.startswith( '>' ):
-			para = doc_tree.Block( doc_tree.block_quote )
-			para.sub = para_subs
-		elif node.class_.startswith( '-' ):
-			if para_list == None:
-				para_list = doc_tree.List()
-				para = para_list
-				
-			sub_para = doc_tree.Paragraph( para_subs )
-			
-			list_item = doc_tree.ListItem( )
-			list_item.add_sub( sub_para )
-			para_list.add_sub( list_item )
-		
-			next_node = nodes_iter.if_peek_next()
-			if next_node != None and next_node.type == tree_parser.NodeType.block and \
-				next_node.class_.startswith( '-' ):
-				continue
-			
-		elif node.class_.startswith( '^' ):
+		if node.class_.startswith( '^' ):
 			assert node.text in ctx.open_notes
 			if len(para_subs) == 1:
 				ctx.open_notes[node.text].node = para_subs[0]
@@ -153,15 +125,41 @@ def _convert_block( ctx, nodes_iter ):
 			
 			del ctx.open_notes[node.text]
 			return None
+			
+		if node.type == tree_parser.NodeType.block:
+			para_subs = [ doc_tree.Paragraph( _convert_inlines( ctx, node ) ) ]
+		else:
+			para_subs = _convert_blocks( ctx, _NodeIterator(node.iter_sub() ))
+			
+		if node.class_.startswith( '#' ):
+			para = doc_tree.Section( len(node.class_), para_subs  )
+		elif node.class_.startswith( '>' ):
+			para = doc_tree.Block( doc_tree.block_quote )
+			para.sub = para_subs
+		elif node.class_.startswith( '-' ):
+			if isinstance( prev_in_section, doc_tree.List ):
+				para_list = prev_in_section
+				para = None
+			else:
+				para_list = doc_tree.List()
+				para = para_list
+				
+			list_item = doc_tree.ListItem( )
+			list_item.add_subs( para_subs )
+			para_list.add_sub( list_item )
+			
 		else:
 			# TODO: probably all classes should be handled with annotations
 			blurb = node.get_annotation( "Blurb" )
 			aside = node.get_annotation( "Aside" )
-			para = doc_tree.Paragraph( para_subs )
 			if blurb != None:
-				para = doc_tree.Block( doc_tree.block_blurb, [para] )
+				para = doc_tree.Block( doc_tree.block_blurb, para )
 			elif aside != None:
-				para = doc_tree.Block( doc_tree.block_aside, [para]  )
+				para = doc_tree.Block( doc_tree.block_aside, para  )
+			else:
+				print(para_subs)
+				assert len(para_subs) == 1
+				para = para_subs[0]
 			
 		return para
 	
@@ -188,11 +186,11 @@ def _convert_inline( ctx, nodes_iter ):
 			raise Exception("Unknown feature", node.class_)
 			
 		block = doc_tree.Inline(feature)
-		block.sub = _convert_inlines(ctx, node)
+		block.add_subs( _convert_inlines(ctx, node) )
 		
 		if len(node.text) != 0:
-			assert len(block.sub) == 0
-			block.sub.append( doc_tree.Text( node.text ) )
+			assert len(block._sub) == 0
+			block.add_sub( doc_tree.Text( node.text ) )
 		
 		return block
 		

@@ -190,6 +190,7 @@ def parse_file( filename ):
 	return root
 
 	
+_syntax_empty_line = re.compile( '[\p{Space_Separator}\t]*$', re.MULTILINE )
 _syntax_lead_space = re.compile( '([\p{Space_Separator}\t]*)' )
 _syntax_line = re.compile( '(?!//)(#+|-|/)' )
 _syntax_block = re.compile( '(>|>>|//|\^([\p{L}\p{N}]*))' )
@@ -238,6 +239,11 @@ def _parse_container( root, src, indent ):
 		blocks.append( block )
 		
 	while not src.is_at_end():
+		if src.match( _syntax_empty_line ) != None:
+			# TODO: it's unclear why this is needed, the regex doesn't consume the line end it appears.
+			src.next_char()
+			continue
+			
 		lead_space = src.peak_match( _syntax_lead_space ).group(1)
 		#print( "LS:{}:".format( lead_space ) )
 		if lead_space != indent:
@@ -251,6 +257,8 @@ def _parse_container( root, src, indent ):
 				_parse_container( child_container, src, lead_space )
 				
 			continue
+			
+		_ = src.match( _syntax_lead_space )
 		
 		annotation_match = src.match( _syntax_annotation )
 		if annotation_match != None:
@@ -273,7 +281,7 @@ def _parse_container( root, src, indent ):
 		block = src.match( _syntax_block )
 		if block != None:
 			class_ = block.group(1)
-			para = _parse_para(src)
+			para = _parse_para(src, indent)
 			if class_ == '//':
 				annotations.append( Annotation( 'comment', para ) )
 			else:
@@ -300,7 +308,7 @@ def _parse_container( root, src, indent ):
 			continue
 			
 			
-		para = _parse_para(src)
+		para = _parse_para(src, indent)
 		# drop empty paragraphs
 		if not para.sub_is_empty():
 			append_block( para )
@@ -413,9 +421,13 @@ def _parse_raw_escape_to( src, close_char ):
 	raise Exception( "Unclosed text feature {}".format( close_char ) )
 
 
-def _parse_para( src ):
+def _parse_para( src, indent ):
 	para = Node(NodeType.block)
 	while not src.is_at_end():
+		lead_space = src.peak_match( _syntax_lead_space ).group(1)
+		if lead_space != indent:
+			break
+			
 		line = _parse_line(src)
 		# Blank line ends the paragraph
 		if len(line) == 0:
