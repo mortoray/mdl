@@ -1,5 +1,7 @@
 # Tree parsing
 import regex as re # type: ignore
+from typing import *
+
 from enum import Enum
 
 class NodeType(Enum):
@@ -35,6 +37,7 @@ class Node(object):
 		self._class_ = ''
 		self._attr = None
 		self._annotations = None
+		self._args = []
 		
 	def __str__( self ):
 		return "{}@{} \"{}\"".format( self._type, self._class_, self._text )
@@ -63,6 +66,15 @@ class Node(object):
 			if anno.class_ == class_:
 				return anno
 		return None
+		
+	def add_arg( self, arg : str):
+		self._args.append( arg )
+		
+	def get_args( self ) -> List[str]:
+		return self._args[:]
+		
+	def has_args( self ):
+		return len(self._args) > 0
 		
 	def promote_to_container( self ):
 		first_child = Node( self._type )
@@ -137,7 +149,9 @@ class Node(object):
 		
 	def iter_annotations( self ):
 		return iter( self._annotations )
-		
+
+_syntax_skip_space = re.compile( '\s+' )
+
 class Source(object):
 	def __init__(self, text):
 		#FEATURE: normalize text line-endings
@@ -145,7 +159,9 @@ class Source(object):
 		self._text = text
 		self._at = 0
 		self._size = len(text)
-		
+
+	def skip_space(self):
+		self.match( _syntax_skip_space )
 	
 	def is_at_end(self):
 		return self._at >= self._size
@@ -194,6 +210,7 @@ _syntax_empty_line = re.compile( '[\p{Space_Separator}\t]*$', re.MULTILINE )
 _syntax_lead_space = re.compile( '([\p{Space_Separator}\t]*)' )
 _syntax_line = re.compile( '(?!//)(#+|-|/)' )
 _syntax_block = re.compile( '(>|>>|//|\^([\p{L}\p{N}]*))' )
+_syntax_tag = re.compile( '{%\s+(\p{L}+)\s' )
 _syntax_raw = re.compile( '(```)' )
 _syntax_raw_end = re.compile( '(^```)', re.MULTILINE )
 _syntax_annotation = re.compile( '@(\p{L}+)' )
@@ -277,6 +294,20 @@ def _parse_container( root, src, indent ):
 			else:
 				append_block( line )
 			continue
+			
+		tag = src.match( _syntax_tag )
+		if tag != None:
+			para = Node(NodeType.block)
+			para.class_ = tag.group(1)
+			while True:
+				arg = _parse_string( src, '}' )
+				if arg == None: 
+					break
+				para.add_arg( arg )
+				
+			append_block( para )
+			continue
+			
 			
 		block = src.match( _syntax_block )
 		if block != None:
@@ -421,6 +452,25 @@ def _parse_raw_escape_to( src, close_char ):
 	raise Exception( "Unclosed text feature {}".format( close_char ) )
 
 
+def _parse_string( src, close_char ):
+	text = ''
+	
+	src.skip_space()
+	has = False
+	while not src.is_at_end():
+		c = src.next_char()
+		if c == '\\':
+			c = src.next_char()
+			has = True
+		elif c == close_char or _syntax_skip_space.search( c ) != None:
+			break
+		else:
+			text += c
+			has = True
+			
+	return text if has else None
+		
+	
 def _parse_para( src, indent ):
 	para = Node(NodeType.block)
 	while not src.is_at_end():
@@ -455,6 +505,11 @@ def _dump_get( node, indent = '' ):
 		header += '/' + node.class_
 	text += _bold(header)
 	text += ' ' + node.text
+	if node.has_args():
+		text += "["
+		text += ",".join( node.get_args() )
+		text += "]"
+	
 	if node.has_annotations():
 		for anno in node.iter_annotations():
 			text += '\n{}\t@{}'.format( indent, _alt(anno.class_) )

@@ -1,0 +1,6 @@
+{% tag param1 param2 }
+
+{% multi
+	param1
+	param2
+}
