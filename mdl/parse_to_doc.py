@@ -109,6 +109,10 @@ def _convert_inlines( ctx, node ):
 			
 	return para_subs
 
+embed_map = {
+	'image': doc_tree.EmbedClass.image,
+}
+
 def _convert_block( ctx, nodes_iter, prev_in_section ):
 	para = None
 	
@@ -148,7 +152,14 @@ def _convert_block( ctx, nodes_iter, prev_in_section ):
 			list_item.add_subs( para_subs )
 			para_list.add_sub( list_item )
 			
+		elif node.class_ in embed_map:
+			args = node.get_args()
+			assert len(args) == 1
+			para = doc_tree.Embed( embed_map[node.class_], args[0] )
+			
 		else:
+			assert node.class_ == '', node.class_
+			
 			# TODO: probably all classes should be handled with annotations
 			blurb = node.get_annotation( "Blurb" )
 			aside = node.get_annotation( "Aside" )

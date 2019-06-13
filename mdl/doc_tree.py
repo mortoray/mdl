@@ -4,13 +4,14 @@
 Base node types form the doc type tree. They should not be instantiated.
 """
 import typing
+from enum import Enum
 
 class BlockNode(object):
 	pass
 	
 class BaseBlock(BlockNode):
-	def __init__(self, subs : typing.List['BlockNode'] = []):
-		self._sub : typing.List['BlockNode'] = []
+	def __init__(self, subs : typing.List[BlockNode] = []):
+		self._sub : typing.List[BlockNode] = []
 		self.add_subs( subs )
 
 	def _validate_sub( self, sub : BlockNode ) -> None:
@@ -20,11 +21,11 @@ class BaseBlock(BlockNode):
 		self._validate_sub( sub )
 		self._sub.append( sub )
 		
-	def add_subs( self, subs : typing.List['BlockNode'] ) -> None:
+	def add_subs( self, subs : typing.List[BlockNode] ) -> None:
 		for sub in subs:
 			self.add_sub( sub )
 			
-	def iter_sub( self ):
+	def iter_sub( self ) -> typing.Sequence[BlockNode]:
 		return self._sub
 
 		
@@ -33,10 +34,10 @@ class ParagraphElement(object):
 		self._sub : typing.List['ParagraphElement'] = []
 		self.add_subs( subs )
 		
-	def _validate_sub( self, sub ):
+	def _validate_sub( self, sub ) -> None:
 		assert isinstance( sub, ParagraphElement ), sub
 		
-	def add_sub( self, sub : 'ParagraphElement' ):
+	def add_sub( self, sub : 'ParagraphElement' ) -> None:
 		self._validate_sub( sub )
 		self._sub.append( sub )
 		
@@ -44,7 +45,7 @@ class ParagraphElement(object):
 		for sub in subs:
 			self.add_sub( sub )
 			
-	def iter_sub( self ):
+	def iter_sub( self ) -> typing.Sequence['ParagraphElement']:
 		return self._sub
 		
 		
@@ -53,18 +54,18 @@ class Paragraph(BlockNode):
 		self._sub : typing.List[ParagraphElement] = []
 		self.add_subs( subs )
 		
-	def _validate_sub( self, sub ):
+	def _validate_sub( self, sub ) -> None:
 		assert isinstance( sub, ParagraphElement ), sub
 		
-	def add_sub( self, sub : ParagraphElement  ):
+	def add_sub( self, sub : ParagraphElement  ) -> None:
 		self._validate_sub( sub )
 		self._sub.append( sub )
 		
-	def add_subs( self, subs : typing.List['ParagraphElement'] ) -> None:
+	def add_subs( self, subs : typing.List[ParagraphElement] ) -> None:
 		for sub in subs:
 			self.add_sub( sub )
 			
-	def iter_sub( self ):
+	def iter_sub( self ) -> typing.Sequence[ParagraphElement]:
 		return self._sub
 		
 		
@@ -74,7 +75,7 @@ class BaseInlineEmpty(object):
 	def __init__(self):
 		pass
 
-class BaseBlockEmpty(object):
+class BaseBlockEmpty(BlockNode):
 	def __init__(self):
 		pass
 		
@@ -152,3 +153,13 @@ class Code(BaseBlockEmpty):
 		self.text = text
 		self.class_ = class_
 	
+
+class EmbedClass(Enum):
+	image = 1
+	
+class Embed(BaseBlockEmpty):
+	def __init__(self, class_ : EmbedClass, url : str ):
+		super().__init__()
+		self.class_ = class_
+		self.url = url
+		

@@ -26,6 +26,8 @@ def get(node, indent = ''):
 		return get_text(node, indent)
 	if isinstance(node, doc_tree.Paragraph):
 		return get_paragraph(node, indent)
+	if isinstance(node, doc_tree.Embed):
+		return get_embed(node, indent)
 	
 	raise Exception( "Unsupported type", node )
 
@@ -66,8 +68,11 @@ def get_text(node, indent):
 	return node.text
 	
 def get_section(node, indent):
-	return '{}<Section:{}>\n{}\n{}'.format( indent, node.level, 
-		get(node.title, indent + '\t|'), get_all(node._sub, indent + '\t') )
+	text = '{}<Section:{}>\n'.format( indent, node.level )
+	if node.title:
+		text += '{}\n'.format( get(node.title, indent + '\t|') )
+	text += get_all(node._sub, indent + '\t')
+	return text
 	
 def get_inline(node, indent):
 	return '%{}/{}/'.format( node.feature.name, get_all_inline(node._sub) )
@@ -83,3 +88,6 @@ def get_list(node, indent):
 	
 def get_list_item(node, indent):
 	return '{}<ListItem>\n{}'.format( indent, get_all(node._sub, indent + '\t') )
+
+def get_embed(node, indent):
+	return '{}<Embed:{}> {}'.format( indent, node.class_.name, node.url )

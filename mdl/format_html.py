@@ -6,6 +6,9 @@ from . import doc_tree
 def format_html( root ):
 	return _HtmlWriter().write( root )
 
+def escape( text : str ) -> str:
+	return str
+	
 class _HtmlWriter(object):
 	def __init__(self):
 		self.output = io.StringIO()
@@ -42,6 +45,7 @@ class _HtmlWriter(object):
 			q( doc_tree.Section, self._write_section ) or \
 			q( doc_tree.Text, self._write_text ) or \
 			q( doc_tree.Paragraph, self._write_paragraph ) or \
+			q( doc_tree.Embed, self._write_embed ) or \
 			fail()
 
 			
@@ -153,3 +157,9 @@ class _HtmlWriter(object):
 			self._write_flow( sub.iter_sub() )
 			self.output.write( '</li>' )
 		self.output.write( '</ul>' )
+
+	def _write_embed( self, node ):
+		self.output.write( '<p class="embed">' )
+		self.output.write( '<img src="{}"/>'.format( node.url ) )
+		self.output.write( '</p>' )
+		
