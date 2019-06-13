@@ -2,6 +2,8 @@
 
 import io
 from . import doc_tree
+import pygments
+from pygments import lexers, formatters
 
 def format_html( root ):
 	return _HtmlWriter().write( root )
@@ -145,7 +147,14 @@ class _HtmlWriter(object):
 		self.output.write( '</footer>' )
 		
 	def _write_code( self, node ):
-		self.output.write( '<pre>{}</pre>'.format( node.text ) )
+		#self.output.write( '<pre>{}</pre>'.format( node.text ) )
+		lexer = pygments.lexers.get_lexer_by_name( node.class_ )
+		formatter = pygments.formatters.HtmlFormatter( cssclass = 'codehilite' )
+		block = pygments.highlight( node.text, lexer, formatter )
+		
+		self.output.write( "<div class='codehilitewrap'>" )
+		self.output.write( block )
+		self.output.write( "</div>" )
 		
 
 	def _write_list( self, node ):
