@@ -11,6 +11,7 @@ from enum import Enum
 T = typing.TypeVar('T')
 class NodeContainer(typing.Generic[T]):
 	def __init__(self):
+		super().__init__()
 		self._sub : typing.List[T] = []
 
 	def _validate_sub( self, sub : T ) -> None:
@@ -35,8 +36,9 @@ class NodeContainer(typing.Generic[T]):
 		return self._sub[0]
 		
 
-class BlockNode(object):
-	pass
+class BlockNode:
+	def __init__(self):
+		super().__init__()
 	
 class BaseBlock(BlockNode, NodeContainer[BlockNode]):
 	def __init__(self, subs : typing.List[BlockNode] = []):
@@ -45,57 +47,38 @@ class BaseBlock(BlockNode, NodeContainer[BlockNode]):
 
 	def _validate_sub( self, sub : BlockNode ) -> None:
 		assert isinstance( sub, BlockNode ), sub
+
 		
+class Element:
+	def __init__(self):
+		super().__init__()
 		
-class ParagraphElement(object):
-	def __init__(self, subs = []):
-		self._sub : typing.List[ParagraphElement] = []
+class ElementContainer(NodeContainer[Element]):
+	def __init__(self):
+		super().__init__()
+
+	def _validate_sub( self, sub : Element ) -> None:
+		assert isinstance( sub, Element ), sub
+		
+class ParagraphElement(Element,ElementContainer):
+	def __init__(self, subs : typing.List[Element] = []):
+		super().__init__()
 		self.add_subs( subs )
 		
-	def _validate_sub( self, sub ) -> None:
-		assert isinstance( sub, ParagraphElement ), sub
-		
-	def add_sub( self, sub : ParagraphElement ) -> None:
-		self._validate_sub( sub )
-		self._sub.append( sub )
-		
-	def add_subs( self, subs : typing.List[ParagraphElement] ) -> None:
-		for sub in subs:
-			self.add_sub( sub )
-			
-	def iter_sub( self ) -> typing.Sequence[ParagraphElement]:
-		return self._sub
-		
-		
-class Paragraph(BlockNode):
+class Paragraph(BlockNode, ElementContainer):
 	def __init__(self, subs = []):
-		self._sub : typing.List[ParagraphElement] = []
+		super().__init__()
 		self.add_subs( subs )
-		
-	def _validate_sub( self, sub ) -> None:
-		assert isinstance( sub, ParagraphElement ), sub
-		
-	def add_sub( self, sub : ParagraphElement  ) -> None:
-		self._validate_sub( sub )
-		self._sub.append( sub )
-		
-	def add_subs( self, subs : typing.List[ParagraphElement] ) -> None:
-		for sub in subs:
-			self.add_sub( sub )
-			
-	def iter_sub( self ) -> typing.Sequence[ParagraphElement]:
-		return self._sub
-		
 		
 		
 # TODO: these "Empty" names are yucky
-class BaseInlineEmpty(object):
+class BaseInlineEmpty:
 	def __init__(self):
-		pass
+		super().__init__()
 
 class BaseBlockEmpty(BlockNode):
 	def __init__(self):
-		pass
+		super().__init__()
 		
 """
 Leaf types may only inherit from Base node types. This prevents collision on simple visitors, as well as keeping the "is-a" relationships clean.
@@ -121,6 +104,7 @@ block_aside = BlockClass('aside')
 		
 class Text(ParagraphElement):
 	def __init__(self, text):
+		super().__init__()
 		self.text = text
 		
 class Inline(ParagraphElement):

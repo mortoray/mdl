@@ -81,13 +81,13 @@ class MarkdownWriter(render.Writer):
 	def _get_paragraph( self, node : Union[doc_tree.Paragraph, doc_tree.ParagraphElement] ):
 		return '\n' + self._get_paragraph_flow( node ) + '\n'
 		
-	def _get_paragraph_flow( self, node : Union[doc_tree.Paragraph, doc_tree.ParagraphElement] ):
+	def _get_paragraph_flow( self, node : doc_tree.ElementContainer ):
 		text = ''
 		for sub in node.iter_sub():
-			text += self._get_paragraph_element( sub )
+			text += self._get_element( sub )
 		return text
 		
-	def _get_paragraph_element( self, elm : doc_tree.ParagraphElement ):
+	def _get_element( self, elm : doc_tree.Element ):
 		text = ""
 		def q( match_type, func : Callable[[Any], str]) -> bool:
 			nonlocal text
