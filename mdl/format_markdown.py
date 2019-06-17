@@ -3,6 +3,7 @@
 import io
 from . import doc_tree
 from . import render
+from .format_html import HtmlWriter
 
 from typing import *
 
@@ -169,6 +170,11 @@ class MarkdownWriter(render.Writer):
 		self.output.write( "\n```{}\n{}\n```\n".format( node.class_, node.text ) )
 
 	def _get_list( self, node : doc_tree.List ) -> str:
+		if not _is_simple_list( node ):
+			writer = HtmlWriter()
+			writer._write_node( node ) #TODO: private access
+			return "\n" + writer.output.getvalue() + "\n"
+			
 		text = ""
 		for sub in node.iter_sub():
 			assert isinstance( sub, doc_tree.ListItem ) # The only supported type
@@ -196,4 +202,11 @@ def _count_longest_backtick_chain( text ):
 	update_max()
 			
 	return max_count
+	
+
+def _is_simple_list( node : doc_tree.List ):
+	for sub in node.iter_sub():
+		if len(sub._sub) != 1 or isinstance(sub._sub, doc_tree.Paragraph):
+			return False
+	return True
 	

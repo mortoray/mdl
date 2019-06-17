@@ -7,12 +7,12 @@ from pygments import lexers, formatters # type: ignore
 from pygments.lexers import php # type: ignore
 
 def format_html( root ):
-	return _HtmlWriter().write( root )
+	return HtmlWriter().write( root )
 
 def escape( text : str ) -> str:
 	return text
 	
-class _HtmlWriter(object):
+class HtmlWriter(object):
 	def __init__(self):
 		self.output = io.StringIO()
 		self.notes = []
