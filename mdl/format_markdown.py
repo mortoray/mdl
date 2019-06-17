@@ -206,7 +206,6 @@ def _count_longest_backtick_chain( text ):
 
 def _is_simple_list( node : doc_tree.List ):
 	for sub in node.iter_sub():
-		assert isinstance( sub, doc_tree.ListItem )
 		if not (sub.len_sub() == 1 and isinstance(sub.first_sub(), doc_tree.Paragraph)):
 			return False
 	return True

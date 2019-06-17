@@ -134,18 +134,16 @@ class Section(BaseBlock):
 		super().__init__()
 		self.title = title_text_block
 		self.level = level
-
-class List(BaseBlock):
-	def __init__(self):
-		super().__init__()
-		
-	def _validate_sub( self, sub ):
-		super()._validate_sub( sub )
-		assert isinstance( sub, ListItem )
+	
 
 class ListItem(BaseBlock):
 	def __init__(self):
 		super().__init__()
+
+class List(BlockNode, NodeContainer[ListItem]):
+	def _validate_sub( self, sub : ListItem ) -> None:
+		assert isinstance( sub, ListItem ), sub
+
 		
 class InlineFeature(object):
 	def __init__(self, name : str):
