@@ -8,28 +8,44 @@ from __future__ import annotations # type: ignore
 import typing
 from enum import Enum
 
+T = typing.TypeVar('T')
+class NodeContainer(typing.Generic[T]):
+	def __init__(self):
+		self._sub : typing.List[T] = []
+
+	def _validate_sub( self, sub : T ) -> None:
+		# There is no way to check if sub is of type T here :/
+		pass
+	
+	def add_sub( self, sub : T ) -> None:
+		self._validate_sub( sub )
+		self._sub.append( sub )
+		
+	def add_subs( self, subs : typing.List[T] ) -> None:
+		for sub in subs:
+			self.add_sub( sub )
+			
+	def iter_sub( self ) -> typing.Sequence[T]:
+		return self._sub
+		
+	def len_sub( self ) -> int:
+		return len(self._sub)
+		
+	def first_sub( self ) -> T:
+		return self._sub[0]
+		
+
 class BlockNode(object):
 	pass
 	
-class BaseBlock(BlockNode):
+class BaseBlock(BlockNode, NodeContainer[BlockNode]):
 	def __init__(self, subs : typing.List[BlockNode] = []):
-		self._sub : typing.List[BlockNode] = []
+		super().__init__()
 		self.add_subs( subs )
 
 	def _validate_sub( self, sub : BlockNode ) -> None:
 		assert isinstance( sub, BlockNode ), sub
-	
-	def add_sub( self, sub : BlockNode ) -> None:
-		self._validate_sub( sub )
-		self._sub.append( sub )
 		
-	def add_subs( self, subs : typing.List[BlockNode] ) -> None:
-		for sub in subs:
-			self.add_sub( sub )
-			
-	def iter_sub( self ) -> typing.Sequence[BlockNode]:
-		return self._sub
-
 		
 class ParagraphElement(object):
 	def __init__(self, subs = []):
