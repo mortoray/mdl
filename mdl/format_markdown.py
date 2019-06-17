@@ -4,6 +4,8 @@ import io
 from . import doc_tree
 from . import render
 
+from typing import *
+
 def format_markdown( root ):
 	return MarkdownWriter().render(root)
 
@@ -22,11 +24,11 @@ class MarkdownWriter(render.Writer):
 		self._write_notes()
 		return self.output.getvalue()
 		
-	def _get_node( self, node ):
+	def _get_node( self, node : doc_tree.BlockNode ) -> str:
 		text = ""
-		def q( type, func ):
+		def q( match_type, func : Callable[[Any], str]) -> bool:
 			nonlocal text
-			if isinstance( node, type ):
+			if isinstance( node, match_type ):
 				text = func( node )
 				return True
 			return False
@@ -37,19 +39,17 @@ class MarkdownWriter(render.Writer):
 		_ = \
 			q( doc_tree.Block, self._get_block ) or \
 			q( doc_tree.Code, self._get_code ) or \
-			q( doc_tree.Inline, self._get_inline ) or \
-			q( doc_tree.Link, self._get_link ) or \
 			q( doc_tree.List, self._get_list ) or \
 			q( doc_tree.Note, self._get_note ) or \
 			q( doc_tree.Section, self._get_section ) or \
-			q( doc_tree.Text, self._get_text ) or \
+			q( doc_tree.Paragraph, self._get_paragraph ) or \
 			fail()
 			
 		return text
 
 			
-	def _get_sub( self, node ):
-		return self._get_node_list( node.sub )
+	def _get_sub( self, node : doc_tree.BaseBlock ):
+		return self._get_node_list( node._sub )
 			
 	def _get_node_list( self, list_ ):
 		return "".join( [ self._get_node( sub ) for sub in list_ ] )
@@ -77,8 +77,35 @@ class MarkdownWriter(render.Writer):
 			fmt = type(self).inline_map[node.feature.name]
 			return "{}{}{}".format( fmt, self._get_sub( node ), fmt )
 		
-	def _get_paragraph( self, node ):
-		return "\n{}\n".format( self._get_sub( node ) )
+	def _get_paragraph( self, node : Union[doc_tree.Paragraph, doc_tree.ParagraphElement] ):
+		return '\n' + self._get_paragraph_flow( node ) + '\n'
+		
+	def _get_paragraph_flow( self, node : Union[doc_tree.Paragraph, doc_tree.ParagraphElement] ):
+		text = ''
+		for sub in node.iter_sub():
+			text += self._get_paragraph_element( sub )
+		return text
+		
+	def _get_paragraph_element( self, elm : doc_tree.ParagraphElement ):
+		text = ""
+		def q( match_type, func : Callable[[Any], str]) -> bool:
+			nonlocal text
+			if isinstance( elm, match_type ):
+				text = func( elm )
+				return True
+			return False
+
+		def fail():
+			raise Exception( "Unknown node type", node )
+		
+		_ = \
+			q( doc_tree.Inline, self._get_inline ) or \
+			q( doc_tree.Link, self._get_link ) or \
+			q( doc_tree.Text, self._get_text ) or \
+			fail()
+			
+		return text
+		
 
 	def _get_quote( self, node ):
 		return "\n>{}\n".format( self._get_sub( node ) )
@@ -95,14 +122,23 @@ class MarkdownWriter(render.Writer):
 			return self._get_paragraph( node )
 		
 		
-	def _get_section( self, node ):
+	def _get_flow( self, nodes : Sequence[ doc_tree.BlockNode ] ) -> str:
+		if len(nodes) == 1 and isinstance( nodes[0], doc_tree.Paragraph ):
+			return self._get_paragraph_flow( nodes[0] )
+			
+		text = ''
+		for node in nodes:
+			text += self._get_node( node )
+		return text
+		
+	def _get_section( self, node : doc_tree.Section ) -> str:
 		text = "\n"
-		if node.title != None:
+		if not node.title is None:
 			text += "#" * node.level
-			text += self._get_node_list( node.title )
+			text += self._get_flow( node.title )
 			text += "\n"
 		
-		return text + self._get_sub(  node )
+		return text + self._get_sub( node )
 		
 	def _get_text( self, node ):
 		#TODO: Escaping of course
@@ -110,7 +146,7 @@ class MarkdownWriter(render.Writer):
 
 	def _get_link( self, node ):
 		# TODO: more escaping
-		return "[{}]({})".format( self._get_sub(node), node.url )
+		return "[{}]({})".format( self._get_paragraph_flow(node), node.url )
 
 	def _get_note( self, node ):
 		self.notes.append( node )
@@ -132,16 +168,16 @@ class MarkdownWriter(render.Writer):
 		# TODO: escape
 		self.output.write( "\n```{}\n{}\n```\n".format( node.class_, node.text ) )
 
-	def _get_list( self, node ):
+	def _get_list( self, node : doc_tree.List ) -> str:
 		text = ""
-		for sub in node.sub:
-			assert isinstance( sub, doc_tree.Block ) # The only supported type
-			assert sub.class_ == doc_tree.block_paragraph
+		for sub in node.iter_sub():
+			assert isinstance( sub, doc_tree.ListItem ) # The only supported type
 			
 			text += "\n- " 
-			text += self._get_sub( sub )
+			text += self._get_flow( sub._sub )
 		text += "\n"
 		return text
+		
 		
 		
 def _count_longest_backtick_chain( text ):

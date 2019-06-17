@@ -1,4 +1,5 @@
 from . import doc_tree
+from typing import *
 
 def dump(node, indent = ''):
 	print( get(node, indent) )
@@ -67,10 +68,16 @@ def get_paragraph(node, indent):
 def get_text(node, indent):
 	return node.text
 	
-def get_section(node, indent):
+def get_flow(nodes : Sequence[doc_tree.BlockNode], indent : str) -> str:
+	text = ''
+	for node in nodes:
+		text += get( node, indent )
+	return text
+
+def get_section(node : doc_tree.Section, indent : str) -> str:
 	text = '{}<Section:{}>\n'.format( indent, node.level )
 	if node.title:
-		text += '{}\n'.format( get(node.title, indent + '\t|') )
+		text += '{}\n'.format( get_flow(node.title, indent + '\t|') )
 	text += get_all(node._sub, indent + '\t')
 	return text
 	

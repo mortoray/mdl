@@ -2,14 +2,15 @@
 
 import io
 from . import doc_tree
-import pygments
-from pygments import lexers, formatters
+import pygments # type: ignore
+from pygments import lexers, formatters # type: ignore
+from pygments.lexers import php # type: ignore
 
 def format_html( root ):
 	return _HtmlWriter().write( root )
 
 def escape( text : str ) -> str:
-	return str
+	return text
 	
 class _HtmlWriter(object):
 	def __init__(self):
@@ -148,7 +149,10 @@ class _HtmlWriter(object):
 		
 	def _write_code( self, node ):
 		#self.output.write( '<pre>{}</pre>'.format( node.text ) )
-		lexer = pygments.lexers.get_lexer_by_name( node.class_ )
+		if node.class_ == "php" and not "<?php" in node.text:
+			lexer = pygments.lexers.php.PhpLexer( startinline = True )
+		else:
+			lexer = pygments.lexers.get_lexer_for_filename( 'file.' + node.class_ )
 		formatter = pygments.formatters.HtmlFormatter( cssclass = 'codehilite' )
 		block = pygments.highlight( node.text, lexer, formatter )
 		

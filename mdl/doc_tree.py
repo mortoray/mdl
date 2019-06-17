@@ -3,6 +3,8 @@
 """
 Base node types form the doc type tree. They should not be instantiated.
 """
+from __future__ import annotations # type: ignore
+
 import typing
 from enum import Enum
 
@@ -31,21 +33,21 @@ class BaseBlock(BlockNode):
 		
 class ParagraphElement(object):
 	def __init__(self, subs = []):
-		self._sub : typing.List['ParagraphElement'] = []
+		self._sub : typing.List[ParagraphElement] = []
 		self.add_subs( subs )
 		
 	def _validate_sub( self, sub ) -> None:
 		assert isinstance( sub, ParagraphElement ), sub
 		
-	def add_sub( self, sub : 'ParagraphElement' ) -> None:
+	def add_sub( self, sub : ParagraphElement ) -> None:
 		self._validate_sub( sub )
 		self._sub.append( sub )
 		
-	def add_subs( self, subs : typing.List['ParagraphElement'] ) -> None:
+	def add_subs( self, subs : typing.List[ParagraphElement] ) -> None:
 		for sub in subs:
 			self.add_sub( sub )
 			
-	def iter_sub( self ) -> typing.Sequence['ParagraphElement']:
+	def iter_sub( self ) -> typing.Sequence[ParagraphElement]:
 		return self._sub
 		
 		
@@ -83,12 +85,12 @@ class BaseBlockEmpty(BlockNode):
 Leaf types may only inherit from Base node types. This prevents collision on simple visitors, as well as keeping the "is-a" relationships clean.
 """
 class Block(BaseBlock):
-	def __init__(self, class_, subs = []):
+	def __init__(self, class_ : BlockClass, subs = []):
 		super().__init__( subs )
 		self._class_ = class_
 		
 	@property
-	def class_(self):
+	def class_(self) -> BlockClass:
 		return self._class_
 		
 		
@@ -106,13 +108,13 @@ class Text(ParagraphElement):
 		self.text = text
 		
 class Inline(ParagraphElement):
-	def __init__(self, feature):
+	def __init__(self, feature : InlineFeature):
 		super().__init__()
 		assert isinstance(feature, InlineFeature)
 		self.feature = feature
 		
 class Section(BaseBlock):
-	def __init__(self, level, title_text_block = None ):
+	def __init__(self, level, title_text_block : typing.Optional[typing.List[BaseBlock]] = None ):
 		super().__init__()
 		self.title = title_text_block
 		self.level = level
@@ -130,7 +132,7 @@ class ListItem(BaseBlock):
 		super().__init__()
 		
 class InlineFeature(object):
-	def __init__(self, name):
+	def __init__(self, name : str):
 		self.name = name
 		
 feature_bold = InlineFeature("bold")
@@ -138,7 +140,7 @@ feature_italic = InlineFeature("italic")
 feature_code = InlineFeature("code")
 
 class Link(ParagraphElement):
-	def __init__(self, url):
+	def __init__(self, url : str):
 		super().__init__()
 		self.url = url
 		
@@ -148,7 +150,7 @@ class Note(BaseInlineEmpty):
 		self.node = node
 		
 class Code(BaseBlockEmpty):
-	def __init__(self, text, class_):
+	def __init__(self, text : str, class_ : str):
 		super().__init__()
 		self.text = text
 		self.class_ = class_
