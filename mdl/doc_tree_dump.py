@@ -29,6 +29,8 @@ def get(node, indent = ''):
 		return get_paragraph(node, indent)
 	if isinstance(node, doc_tree.Embed):
 		return get_embed(node, indent)
+	if isinstance(node, doc_tree.Code):
+		return get_code(node, indent)
 	
 	raise Exception( "Unsupported type", node )
 
@@ -67,7 +69,11 @@ def get_paragraph(node, indent):
 	
 def get_text(node, indent):
 	return node.text
-	
+
+def get_code(node : doc_tree.Code, indent):
+	return "{}<Code:{}>\n{}{}\n".format( indent, node.class_, indent + "\t", 
+		node.text.replace( "\n", "\n{}".format( indent + "\t") ) )
+		
 def get_flow(nodes : Sequence[doc_tree.BlockNode], indent : str) -> str:
 	text = ''
 	for node in nodes:

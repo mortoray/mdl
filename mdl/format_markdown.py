@@ -44,15 +44,16 @@ class MarkdownWriter(render.Writer):
 			q( doc_tree.Note, self._get_note ) or \
 			q( doc_tree.Section, self._get_section ) or \
 			q( doc_tree.Paragraph, self._get_paragraph ) or \
+			q( doc_tree.Embed, self._get_embed ) or \
 			fail()
 			
 		return text
 
 			
-	def _get_sub( self, node : doc_tree.BaseBlock ):
+	def _get_sub( self, node : doc_tree.BaseBlock ) -> str:
 		return self._get_node_list( node._sub )
 			
-	def _get_node_list( self, list_ ):
+	def _get_node_list( self, list_ : Sequence[doc_tree.BlockNode] ) -> str:
 		return "".join( [ self._get_node( sub ) for sub in list_ ] )
 		
 
@@ -61,10 +62,10 @@ class MarkdownWriter(render.Writer):
 		"bold": "*",
 		"code": "`",
 	}
-	def _get_inline( self, node ):
+	def _get_inline( self, node : doc_tree.Inline ) -> str:
 		if node.feature == doc_tree.feature_code:
 			# This is GitHub's style of escaping ticks inside ticks
-			text = self._get_sub( node )
+			text = self._get_paragraph_flow( node )
 			tick_len = 1 + _count_longest_backtick_chain( text )
 			ticks = '`' * tick_len
 			pre = ticks
@@ -76,18 +77,18 @@ class MarkdownWriter(render.Writer):
 			return "{}{}{}".format( pre, text, post )
 		else:
 			fmt = type(self).inline_map[node.feature.name]
-			return "{}{}{}".format( fmt, self._get_sub( node ), fmt )
+			return "{}{}{}".format( fmt, self._get_paragraph_flow( node ), fmt )
 		
 	def _get_paragraph( self, node : Union[doc_tree.Paragraph, doc_tree.ParagraphElement] ):
 		return '\n' + self._get_paragraph_flow( node ) + '\n'
 		
-	def _get_paragraph_flow( self, node : doc_tree.ElementContainer ):
+	def _get_paragraph_flow( self, node : doc_tree.ElementContainer ) -> str:
 		text = ''
 		for sub in node.iter_sub():
 			text += self._get_element( sub )
 		return text
 		
-	def _get_element( self, elm : doc_tree.Element ):
+	def _get_element( self, elm : doc_tree.Element ) -> str:
 		text = ""
 		def q( match_type, func : Callable[[Any], str]) -> bool:
 			nonlocal text
@@ -108,19 +109,20 @@ class MarkdownWriter(render.Writer):
 		return text
 		
 
-	def _get_quote( self, node ):
+	def _get_quote( self, node : doc_tree.Block ) -> str:
 		return "\n>{}\n".format( self._get_sub( node ) )
 
-	def _get_blurb( self, node ):
+	def _get_blurb( self, node : doc_tree.Block ) -> str:
 		return "\n----\n\n_{}_\n".format( self._get_sub( node ) )
 
-	def _get_block( self, node ):
+	def _get_block( self, node : doc_tree.Block ) -> str:
 		if node.class_ == doc_tree.block_quote:
 			return self._get_quote( node )
 		elif node.class_ == doc_tree.block_blurb:
 			return self._get_blurb( node )
-		else:
-			return self._get_paragraph( node )
+		#else:
+		#	return self._get_paragraph( node )
+		raise Exception( "Unrecognized block type", node.class_ )
 		
 		
 	def _get_flow( self, nodes : Sequence[ doc_tree.BlockNode ] ) -> str:
@@ -141,20 +143,20 @@ class MarkdownWriter(render.Writer):
 		
 		return text + self._get_sub( node )
 		
-	def _get_text( self, node ):
+	def _get_text( self, node : doc_tree.Text ) -> str:
 		#TODO: Escaping of course
 		return node.text
 
-	def _get_link( self, node ):
+	def _get_link( self, node : doc_tree.Link ) -> str:
 		# TODO: more escaping
 		return "[{}]({})".format( self._get_paragraph_flow(node), node.url )
 
-	def _get_note( self, node ):
+	def _get_note( self, node : doc_tree.Note ) -> str:
 		self.notes.append( node )
 		number = len(self.notes)
 		return "<sup>[{}](#note-{})</sup>".format( number, number )
 
-	def _write_notes( self ):
+	def _write_notes( self ) -> None:
 		if len(self.notes) == 0:
 			return
 			
@@ -165,9 +167,9 @@ class MarkdownWriter(render.Writer):
 			self.output.write("\n")
 			
 
-	def _get_code( self, node ):
+	def _get_code( self, node : doc_tree.Code ) -> str:
 		# TODO: escape
-		self.output.write( "\n```{}\n{}\n```\n".format( node.class_, node.text ) )
+		return "\n```{}\n{}\n```\n".format( node.class_, node.text )
 
 	def _get_list( self, node : doc_tree.List ) -> str:
 		if not _is_simple_list( node ):
@@ -184,9 +186,13 @@ class MarkdownWriter(render.Writer):
 		text += "\n"
 		return text
 		
+	def _get_embed( self, node : doc_tree.Embed ) -> str:
+		assert node.class_ == doc_tree.EmbedClass.image
+		return "\n![]({})\n".format( node.url )
 		
 		
-def _count_longest_backtick_chain( text ):
+		
+def _count_longest_backtick_chain( text : str ) -> int:
 	count = 0
 	max_count = 0
 	def update_max():
@@ -204,7 +210,7 @@ def _count_longest_backtick_chain( text ):
 	return max_count
 	
 
-def _is_simple_list( node : doc_tree.List ):
+def _is_simple_list( node : doc_tree.List ) -> bool:
 	for sub in node.iter_sub():
 		if not (sub.len_sub() == 1 and isinstance(sub.first_sub(), doc_tree.Paragraph)):
 			return False
