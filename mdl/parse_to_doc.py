@@ -132,9 +132,19 @@ def _convert_block( ctx, nodes_iter, prev_in_section ):
 			if not node.text in ctx.open_notes:
 				raise Exception( f'There is no reference to this note "{node.text}"' )
 			assert len(para_subs) == 1 and isinstance(para_subs[0], doc_tree.Paragraph)
-			ctx.open_notes[node.text].add_subs( para_subs[0].iter_sub() )
-			
+			note_node = ctx.open_notes[node.text]
 			del ctx.open_notes[node.text]
+			
+			if isinstance( note_node, doc_tree.Note ):
+				note_node.add_subs( para_subs[0].iter_sub() )
+			elif isinstance( note_node, doc_tree.Link ):
+				ps = para_subs[0]
+				assert ps.len_sub() == 1 and isinstance( ps.first_sub(), doc_tree.Link )
+				note_node.url = ps.first_sub().url
+			else:
+				raise Exception( "Unexpected note node: " + note_node )
+			
+			
 			return None
 			
 		if node.class_.startswith( '#' ):
@@ -239,10 +249,21 @@ def _convert_link( ctx, node, nodes_iter ):
 	url_node = nodes_iter.next()
 	if url_node.class_ != '(':
 		raise Exception( "Unexpected node following anchor: " + str(url_node) )
+		
 	url = url_node.text
+	assert len(url) != 0
+	if url[0] == '^':
+		note = url[1:]
+		url = None
+	else:
+		url = url_node.text
+		note = None
 
 	block = doc_tree.Link(url)
 	block.add_subs( _convert_inlines(ctx, node) )
+
+	if note != None:
+		ctx.open_notes[note] = block
 		
 	return block
 	
