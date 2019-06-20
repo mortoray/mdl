@@ -71,11 +71,6 @@ class Paragraph(BlockNode, ElementContainer):
 		self.add_subs( subs )
 		
 		
-# TODO: these "Empty" names are yucky
-class BaseInlineEmpty:
-	def __init__(self):
-		super().__init__()
-
 class BaseBlockEmpty(BlockNode):
 	def __init__(self):
 		super().__init__()
@@ -142,10 +137,11 @@ class Link(ParagraphElement):
 		super().__init__()
 		self.url = url
 		
-class Note(BaseInlineEmpty):
-	def __init__(self, node):
+
+class Note(ParagraphElement):
+	def __init__(self, elements : Sequence[Element] = []):
 		super().__init__()
-		self.node = node
+		self.add_subs( elements )
 		
 class Code(BaseBlockEmpty):
 	def __init__(self, text : str, class_ : str):

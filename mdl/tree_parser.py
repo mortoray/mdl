@@ -212,7 +212,7 @@ def parse_file( filename ):
 _syntax_empty_line = re.compile( r'[\p{Space_Separator}\t]*$', re.MULTILINE )
 _syntax_lead_space = re.compile( r'([\p{Space_Separator}\t]*)' )
 _syntax_line = re.compile( r'(?!//)(#+|-|/)' )
-_syntax_block = re.compile( r'(>|>>|//|\^([\p{L}\p{N}]*))' )
+_syntax_block = re.compile( r'(>|>>|//|\^([\p{L}\p{N}]*))\s*' )
 _syntax_tag = re.compile( r'{%\s+(\p{L}+)\s' )
 _syntax_raw = re.compile( r'(```)' )
 _syntax_raw_end = re.compile( r'(^```)', re.MULTILINE )

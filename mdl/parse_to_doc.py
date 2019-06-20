@@ -122,22 +122,20 @@ def _convert_block( ctx, nodes_iter, prev_in_section ):
 	
 	while True:
 		node = nodes_iter.next()
-		if node.class_.startswith( '^' ):
-			assert node.text in ctx.open_notes
-			if len(para_subs) == 1:
-				ctx.open_notes[node.text].node = para_subs[0]
-			else:
-				para = doc_tree.Paragraph()
-				para._sub = para_subs
-				ctx.open_notes[node.text].node = para
-			
-			del ctx.open_notes[node.text]
-			return None
 			
 		if node.type == tree_parser.NodeType.block:
 			para_subs = [ doc_tree.Paragraph( _convert_inlines( ctx, node ) ) ]
 		else:
 			para_subs = _convert_blocks( ctx, _NodeIterator(node.iter_sub() ))
+			
+		if node.class_.startswith( '^' ):
+			if not node.text in ctx.open_notes:
+				raise Exception( f'There is no reference to this note "{node.text}"' )
+			assert len(para_subs) == 1 and isinstance(para_subs[0], doc_tree.Paragraph)
+			ctx.open_notes[node.text].add_subs( para_subs[0].iter_sub() )
+			
+			del ctx.open_notes[node.text]
+			return None
 			
 		if node.class_.startswith( '#' ):
 			para = doc_tree.Section( len(node.class_), para_subs  )
@@ -215,7 +213,7 @@ def _convert_note( ctx, node, nodes_iter ):
 		if node.text in ctx.open_notes:
 			raise Exception( "There's already a footnote reference with name {}".format( node.text ) )
 		
-		empty_note = doc_tree.Note(None) #incomplete for now
+		empty_note = doc_tree.Note() #incomplete for now
 		ctx.open_notes[node.text] = empty_note
 		return empty_note
 		

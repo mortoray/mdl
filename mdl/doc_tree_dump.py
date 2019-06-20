@@ -94,7 +94,7 @@ def get_link(node, indent):
 	return '%link{{url={}}}/{}/'.format( node.url, get_all_inline(node._sub) )
 
 def get_note(node, indent):
-	return '^{{{}}}'.format( get(node.node) )
+	return '^{{{}}}'.format( get_all_inline(node._sub) )
 	
 def get_list(node, indent):
 	return '{}<List>\n{}'.format( indent, get_all(node._sub, indent + '\t') )
