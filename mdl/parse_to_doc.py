@@ -166,9 +166,9 @@ def _convert_block( ctx, nodes_iter, prev_in_section ):
 			blurb = node.get_annotation( "Blurb" )
 			aside = node.get_annotation( "Aside" )
 			if blurb != None:
-				para = doc_tree.Block( doc_tree.block_blurb, para )
+				para = doc_tree.Block( doc_tree.block_blurb, para_subs )
 			elif aside != None:
-				para = doc_tree.Block( doc_tree.block_aside, para  )
+				para = doc_tree.Block( doc_tree.block_aside, para_subs  )
 			else:
 				assert len(para_subs) == 1
 				para = para_subs[0]

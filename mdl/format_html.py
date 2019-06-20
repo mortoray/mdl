@@ -142,7 +142,7 @@ class HtmlWriter(object):
 		self.output.write( '<ol>' )
 		for index, note in enumerate(self.notes):
 			self.output.write( '<li id="note-{}">'.format(index+1) )
-			self._write_node( note.node )
+			self._write_sub( note )
 			self.output.write( '</li>' )
 		self.output.write( '</ol>' )
 		self.output.write( '</footer>' )
