@@ -110,14 +110,17 @@ class HtmlWriter(object):
 	def _write_section( self, node ):
 		level_adjust = 2
 		
-		self.output.write( "<section>" )
+		if node.level > 0:
+			self.output.write( "<section>" )
+			
 		if node.title != None:
 			self.output.write( "<h{}>".format( node.level + level_adjust ) )
 			self._write_flow( node.title )
 			self.output.write( "</h{}>".format( node.level + level_adjust ) )
 		
 		self._write_sub(  node )
-		self.output.write( "</section>" )
+		if node.level > 0:
+			self.output.write( "</section>" )
 		
 	def _write_text( self, node ):
 		#TODO: Escaping of course
