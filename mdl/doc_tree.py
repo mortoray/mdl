@@ -22,7 +22,7 @@ class NodeContainer(typing.Generic[T]):
 		self._validate_sub( sub )
 		self._sub.append( sub )
 		
-	def add_subs( self, subs : typing.List[T] ) -> None:
+	def add_subs( self, subs : typing.Sequence[T] ) -> None:
 		for sub in subs:
 			self.add_sub( sub )
 			
@@ -97,7 +97,7 @@ block_blurb = BlockClass('blurb')
 block_aside = BlockClass('aside')
 		
 		
-class Text(ParagraphElement):
+class Text(Element):
 	def __init__(self, text):
 		super().__init__()
 		self.text = text
@@ -139,7 +139,7 @@ class Link(ParagraphElement):
 		
 
 class Note(ParagraphElement):
-	def __init__(self, elements : Sequence[Element] = []):
+	def __init__(self, elements : typing.Sequence[Element] = []):
 		super().__init__()
 		self.add_subs( elements )
 		

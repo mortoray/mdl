@@ -1,6 +1,7 @@
 # Convert the parse tree to a document tree
 from . import doc_tree
 from . import tree_parser
+from typing import *
 
 class _ConvertContext(object):
 	def __init__(self):
@@ -108,8 +109,7 @@ def _convert_inlines( ctx, node ):
 	nodes_iter = _NodeIterator( node.iter_sub() )
 	while nodes_iter.has_next():
 		para = _convert_inline( ctx, nodes_iter )
-		if para != None:
-			para_subs.append( para )
+		para_subs.extend( para )
 			
 	return para_subs
 
@@ -175,18 +175,18 @@ def _convert_block( ctx, nodes_iter, prev_in_section ):
 			
 		return para
 	
-def _convert_inline( ctx, nodes_iter ):
+def _convert_inline( ctx, nodes_iter ) -> Sequence[doc_tree.Element]:
 	node = nodes_iter.next()
 	
 	if node.type == tree_parser.NodeType.text:
-		return doc_tree.Text( node.text )
+		return [ doc_tree.Text( node.text ) ]
 		
 	if node.type == tree_parser.NodeType.inline:
 		if node.class_ == '[':
-			return _convert_link( ctx, node, nodes_iter )
+			return [ _convert_link( ctx, node, nodes_iter ) ]
 
 		if node.class_ == '^':
-			return _convert_note( ctx, node, nodes_iter )
+			return [ _convert_note( ctx, node, nodes_iter ) ]
 			
 		if node.class_ == '*':
 			feature = doc_tree.feature_bold
@@ -194,6 +194,9 @@ def _convert_inline( ctx, nodes_iter ):
 			feature = doc_tree.feature_italic
 		elif node.class_ == '`':
 			feature = doc_tree.feature_code
+		elif node.class_ == '(':
+			return [ doc_tree.Text( '(' + node.text + ')' ) ]
+			
 		else:
 			raise Exception("Unknown feature", node.class_)
 			
@@ -204,7 +207,7 @@ def _convert_inline( ctx, nodes_iter ):
 			assert len(block._sub) == 0
 			block.add_sub( doc_tree.Text( node.text ) )
 		
-		return block
+		return [ block ]
 		
 	raise Exception("Unexpected node type" )
 
