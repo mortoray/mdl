@@ -154,6 +154,7 @@ class Node(object):
 		return iter( self._annotations )
 
 _syntax_skip_space = re.compile( r'\s+' )
+_syntax_peek_line = re.compile( r'(.*)$', re.MULTILINE )
 
 class Source(object):
 	def __init__(self, text):
@@ -169,6 +170,12 @@ class Source(object):
 	def is_at_end(self):
 		return self._at >= self._size
 		
+	def peek_line(self):
+		m = _syntax_peek_line.match( self._text, self._at )
+		if m == None:
+			return ""
+		return m.group(1)
+		
 	def peek_char(self):
 		return self._text[self._at]
 		
@@ -183,7 +190,7 @@ class Source(object):
 			self._at = m.end()
 		return m
 		
-	def peak_match( self, re ):
+	def peek_match( self, re ):
 		m = re.match( self._text, self._at )
 		return m
 		
@@ -266,8 +273,7 @@ def _parse_container( root, src, indent ):
 			src.next_char()
 			continue
 			
-		lead_space = src.peak_match( _syntax_lead_space ).group(1)
-		#print( "LS:{}:".format( lead_space ) )
+		lead_space = src.peek_match( _syntax_lead_space ).group(1)
 		if lead_space != indent:
 			# TODO: add some strong rules about what's allowed here
 			if len(lead_space) < len(indent):
@@ -359,7 +365,7 @@ def _parse_container( root, src, indent ):
 		if not para.sub_is_empty():
 			append_block( para )
 
-			
+
 	root.add_subs( blocks )
 	
 
@@ -488,10 +494,17 @@ def _parse_string( src, close_char ):
 	
 def _parse_para( src, indent ):
 	para = Node(NodeType.block)
+	first = True
 	while not src.is_at_end():
-		lead_space = src.peak_match( _syntax_lead_space ).group(1)
-		if lead_space != indent:
-			break
+	
+		# Parse Container preconsumes the leading space on the first entry to the paragraph, in order to do
+		# other block matching. It's not sure how this can be avoided.
+		if not first:
+			lead_space = src.peek_match( _syntax_lead_space ).group(1)
+			if lead_space != indent:
+				break
+			_ = src.match( _syntax_lead_space )
+		first = False
 			
 		line = _parse_line(src)
 		# Blank line ends the paragraph

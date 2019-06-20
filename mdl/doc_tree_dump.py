@@ -51,9 +51,9 @@ def get_all(nodes, indent):
 	
 def _get_sub(node, indent):
 	indent += '\t'
-	txt = indent
+	txt = ""
 	for sub in node.iter_sub():
-		txt += get(sub)
+		txt += get(sub, indent)
 	txt += '\n'
 	return txt
 
@@ -68,7 +68,7 @@ def get_paragraph(node, indent):
 	return txt
 	
 def get_text(node, indent):
-	return node.text
+	return indent + node.text
 
 def get_code(node : doc_tree.Code, indent):
 	return "{}<Code:{}>\n{}{}\n".format( indent, node.class_, indent + "\t", 
