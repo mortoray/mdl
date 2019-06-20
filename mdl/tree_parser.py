@@ -15,6 +15,8 @@ class NodeType(Enum):
 	inline = 4
 	# may not contain children, text is the raw text
 	raw = 5
+	# may not contain children, data is the structured data
+	matter = 6
 	
 class Annotation(object):
 	def __init__(self, class_, node = None):
@@ -38,6 +40,7 @@ class Node(object):
 		self._attr = None
 		self._annotations = None
 		self._args = []
+		self._data = None
 		
 	def __str__( self ):
 		return "{}@{} \"{}\"".format( self._type, self._class_, self._text )
@@ -45,7 +48,7 @@ class Node(object):
 	def validate_sub( self, sub ):
 		if self._type == NodeType.text:
 			raise Exception( "The text type should not have children" )
-		if self._type == NodeType.container and not sub._type in [NodeType.block, NodeType.raw, NodeType.container]:
+		if self._type == NodeType.container and not sub._type in [NodeType.block, NodeType.raw, NodeType.container, NodeType.matter]:
 			raise Exception( "containers can only contain blocks/raw" )
 		if self._type in [NodeType.block, NodeType.inline] and not sub._type in [NodeType.inline, NodeType.text]:
 			raise Exception( "blocks/inlines can only contain inline/text" )
@@ -150,7 +153,7 @@ class Node(object):
 	def iter_annotations( self ):
 		return iter( self._annotations )
 
-_syntax_skip_space = re.compile( '\s+' )
+_syntax_skip_space = re.compile( r'\s+' )
 
 class Source(object):
 	def __init__(self, text):
@@ -206,15 +209,17 @@ def parse_file( filename ):
 	return root
 
 	
-_syntax_empty_line = re.compile( '[\p{Space_Separator}\t]*$', re.MULTILINE )
-_syntax_lead_space = re.compile( '([\p{Space_Separator}\t]*)' )
-_syntax_line = re.compile( '(?!//)(#+|-|/)' )
-_syntax_block = re.compile( '(>|>>|//|\^([\p{L}\p{N}]*))' )
-_syntax_tag = re.compile( '{%\s+(\p{L}+)\s' )
-_syntax_raw = re.compile( '(```)' )
-_syntax_raw_end = re.compile( '(^```)', re.MULTILINE )
-_syntax_annotation = re.compile( '@(\p{L}+)' )
-_syntax_rest_line = re.compile( '(.*)$', re.MULTILINE )
+_syntax_empty_line = re.compile( r'[\p{Space_Separator}\t]*$', re.MULTILINE )
+_syntax_lead_space = re.compile( r'([\p{Space_Separator}\t]*)' )
+_syntax_line = re.compile( r'(?!//)(#+|-|/)' )
+_syntax_block = re.compile( r'(>|>>|//|\^([\p{L}\p{N}]*))' )
+_syntax_tag = re.compile( r'{%\s+(\p{L}+)\s' )
+_syntax_raw = re.compile( r'(```)' )
+_syntax_raw_end = re.compile( r'(^```)', re.MULTILINE )
+_syntax_matter = re.compile( r'(^\+\+\+)') 
+_syntax_matter_end = re.compile( r'(^\+\+\+$)', re.MULTILINE )
+_syntax_annotation = re.compile( r'@(\p{L}+)' )
+_syntax_rest_line = re.compile( r'(.*)$', re.MULTILINE )
 
 # A feature may have any regex opening match, but requires a single character terminal
 class FeatureParse(object):
@@ -234,7 +239,7 @@ class FeatureParse(object):
 		fp.is_raw = True
 		return fp
 	
-_syntax_feature = re.compile('([\*_\[\(`])')
+_syntax_feature = re.compile(r'([\*_\[\(`])')
 _syntax_feature_map = {
 	'*': FeatureParse.open_close('*','*'),
 	'_': FeatureParse.open_close('_','_'),
@@ -242,7 +247,7 @@ _syntax_feature_map = {
 	'[': FeatureParse.open_close('[',']'),
 	'(': FeatureParse.raw('(',')'),
 }
-_syntax_inline_note = re.compile( '\^([\p{L}\p{N}]*)' )
+_syntax_inline_note = re.compile( r'\^([\p{L}\p{N}]*)' )
 
 def _parse_container( root, src, indent ):
 	annotations = []
@@ -336,6 +341,16 @@ def _parse_container( root, src, indent ):
 			raw.text = raw_text[1:-1]
 			raw.class_ = line_match.group(1)
 			append_block( raw )
+			continue
+			
+		matter_match = src.match( _syntax_matter )
+		if matter_match != None:
+			matter = Node(NodeType.matter)
+			# TODO: parse data, matter.data = yaml-like parsing
+			end_match, raw_text = src.to_match(_syntax_matter_end)
+			assert end_match != None
+			matter.text = raw_text
+			append_block( matter )
 			continue
 			
 			

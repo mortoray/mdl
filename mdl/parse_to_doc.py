@@ -94,6 +94,10 @@ def _convert_blocks( ctx, nodes_iter ):
 			para = _convert_block( ctx, nodes_iter, prev_in_section )
 			append_block( para )
 			
+		elif node.type == tree_parser.NodeType.matter:
+			_ = nodes_iter.next()
+			pass
+			
 		else:
 			raise Exception("Unexpected block type", node)
 			
