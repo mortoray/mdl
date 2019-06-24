@@ -5,9 +5,18 @@ Base node types form the doc type tree. They should not be instantiated.
 """
 from __future__ import annotations # type: ignore
 
-import typing
+import typing, abc
 from enum import Enum
 
+class Node(abc.ABC):
+	def __init__(self):
+		super().__init__()
+		
+	#@abc.abstractmethod
+	#def visit( self, proc : typing.Callable[[Node],bool] ) -> None:
+		#pass
+		
+		
 T = typing.TypeVar('T')
 class NodeContainer(typing.Generic[T]):
 	def __init__(self):
@@ -36,12 +45,12 @@ class NodeContainer(typing.Generic[T]):
 		return self._sub[0]
 		
 
-class BlockNode:
+class BlockNode(Node):
 	def __init__(self):
 		super().__init__()
 	
-class BaseBlock(BlockNode, NodeContainer[BlockNode]):
-	def __init__(self, subs : typing.List[BlockNode] = []):
+class BlockContainer(BlockNode, NodeContainer[BlockNode]):
+	def __init__(self, subs : typing.List[Block] = []):
 		super().__init__()
 		self.add_subs( subs )
 
@@ -49,7 +58,7 @@ class BaseBlock(BlockNode, NodeContainer[BlockNode]):
 		assert isinstance( sub, BlockNode ), sub
 
 		
-class Element:
+class Element(Node):
 	def __init__(self):
 		super().__init__()
 		
@@ -69,16 +78,12 @@ class Paragraph(BlockNode, ElementContainer):
 	def __init__(self, subs = []):
 		super().__init__()
 		self.add_subs( subs )
-		
-		
-class BaseBlockEmpty(BlockNode):
-	def __init__(self):
-		super().__init__()
+	
 		
 """
 Leaf types may only inherit from Base node types. This prevents collision on simple visitors, as well as keeping the "is-a" relationships clean.
 """
-class Block(BaseBlock):
+class Block(BlockContainer):
 	def __init__(self, class_ : BlockClass, subs = []):
 		super().__init__( subs )
 		self._class_ = class_
@@ -108,14 +113,14 @@ class Inline(ParagraphElement):
 		assert isinstance(feature, InlineFeature)
 		self.feature = feature
 		
-class Section(BaseBlock):
-	def __init__(self, level, title_text_block : typing.Optional[typing.List[BaseBlock]] = None ):
+class Section(BlockContainer):
+	def __init__(self, level, title_text_block : typing.Optional[typing.List[BlockContainer]] = None ):
 		super().__init__()
 		self.title = title_text_block
 		self.level = level
 	
 
-class ListItem(BaseBlock):
+class ListItem(BlockContainer):
 	def __init__(self):
 		super().__init__()
 
@@ -143,7 +148,7 @@ class Note(ParagraphElement):
 		super().__init__()
 		self.add_subs( elements )
 		
-class Code(BaseBlockEmpty):
+class Code(BlockNode):
 	def __init__(self, text : str, class_ : str):
 		super().__init__()
 		self.text = text
@@ -153,7 +158,7 @@ class Code(BaseBlockEmpty):
 class EmbedClass(Enum):
 	image = 1
 	
-class Embed(BaseBlockEmpty):
+class Embed(BlockNode):
 	def __init__(self, class_ : EmbedClass, url : str ):
 		super().__init__()
 		self.class_ = class_

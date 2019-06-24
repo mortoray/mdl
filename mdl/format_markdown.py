@@ -50,7 +50,7 @@ class MarkdownWriter(render.Writer):
 		return text
 
 			
-	def _get_sub( self, node : doc_tree.BaseBlock ) -> str:
+	def _get_sub( self, node : doc_tree.BlockContainer ) -> str:
 		return self._get_node_list( node._sub )
 			
 	def _get_node_list( self, list_ : Sequence[doc_tree.BlockNode] ) -> str:
