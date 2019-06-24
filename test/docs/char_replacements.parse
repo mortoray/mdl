@@ -1,0 +1,5 @@
+container 
+	block 
+		text An em-dash is here -- can you see it?
+	block 
+		text It's also here--packed together.

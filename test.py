@@ -1,19 +1,32 @@
-# Informal tests used while writing initial code
-import sys,os
+"""
+	Test driver for document tests.
+"""
+import os
+from mdl import tree_parser
+from shelljob import fs
 
-from mdl import tree_parser, parse_to_doc, doc_tree_dump, format_html, format_markdown
-node = tree_parser.parse_file( sys.argv[1] )
-tree_parser.dump(node)
+def passed(text : str) -> str:
+	return '\x1b[32m{} ✔ \x1b[m'.format(text)
 
-print( " * * * " )
+def failed(text : str) -> str:
+	return '\x1b[31m{} ✗\x1b[m'.format(text)
 
-doc = parse_to_doc.convert( node )
-doc_tree_dump.dump(doc)
-
-#print( " * * * " )
-#html = format_html.format_html( doc )
-#print( html )
-
-print( " * * * " )
-markdown = format_markdown.format_markdown( doc )
-print( markdown )
+def status(text, okay):
+	print( passed(text) if okay else failed(text), end=' ' )
+	
+for fname in fs.find( 'test/docs', name_regex = r".*\.mdl" ):
+	print( fname, end= ' ' )
+	parsed = tree_parser.parse_file( fname )
+	base = os.path.splitext( fname )[0]
+	
+	parse_name = base + '.parse'
+	if os.path.exists( parse_name ):
+		parse_dump = tree_parser.get_dump( parsed )
+		with open( parse_name, 'r', encoding = 'utf-8' ) as check:
+			check_dump = check.read()
+		
+		status( 'Parse', parse_dump == check_dump )
+	print()
+		
+		
+		
