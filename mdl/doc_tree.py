@@ -174,3 +174,5 @@ class Embed(BlockNode):
 		self.class_ = class_
 		self.url = url
 		
+	def visit( self, proc : typing.Callable[[Node],bool] ) -> None:
+		pass

@@ -5,5 +5,6 @@ check:
 .PHONY: check
 
 test:
-
+	python test.py
 .PHONY: test
+	
