@@ -12,12 +12,12 @@ class Node(abc.ABC):
 	def __init__(self):
 		super().__init__()
 		
-	#@abc.abstractmethod
-	#def visit( self, proc : typing.Callable[[Node],bool] ) -> None:
-		#pass
+	@abc.abstractmethod
+	def visit( self, proc : typing.Callable[[Node],bool] ) -> None:
+		pass
 		
 		
-T = typing.TypeVar('T')
+T = typing.TypeVar('T', bound = Node)
 class NodeContainer(typing.Generic[T]):
 	def __init__(self):
 		super().__init__()
@@ -44,12 +44,17 @@ class NodeContainer(typing.Generic[T]):
 	def first_sub( self ) -> T:
 		return self._sub[0]
 		
+	def visit( self, proc : typing.Callable[[Node],bool] ) -> None:
+		for node in self._sub:
+			if proc(node):
+				node.visit( proc )
+			
 
 class BlockNode(Node):
 	def __init__(self):
 		super().__init__()
 	
-class BlockContainer(BlockNode, NodeContainer[BlockNode]):
+class BlockContainer(NodeContainer[BlockNode], BlockNode):
 	def __init__(self, subs : typing.List[Block] = []):
 		super().__init__()
 		self.add_subs( subs )
@@ -62,6 +67,7 @@ class Element(Node):
 	def __init__(self):
 		super().__init__()
 		
+		
 class ElementContainer(NodeContainer[Element]):
 	def __init__(self):
 		super().__init__()
@@ -69,12 +75,12 @@ class ElementContainer(NodeContainer[Element]):
 	def _validate_sub( self, sub : Element ) -> None:
 		assert isinstance( sub, Element ), sub
 		
-class ParagraphElement(Element,ElementContainer):
+class ParagraphElement(ElementContainer, Element):
 	def __init__(self, subs : typing.List[Element] = []):
 		super().__init__()
 		self.add_subs( subs )
 		
-class Paragraph(BlockNode, ElementContainer):
+class Paragraph(ElementContainer, BlockNode):
 	def __init__(self, subs = []):
 		super().__init__()
 		self.add_subs( subs )
@@ -103,9 +109,13 @@ block_aside = BlockClass('aside')
 		
 		
 class Text(Element):
-	def __init__(self, text):
+	def __init__(self, text : str):
 		super().__init__()
 		self.text = text
+		
+	def visit( self, proc : typing.Callable[[Node],bool] ) -> None:
+		pass
+		
 		
 class Inline(ParagraphElement):
 	def __init__(self, feature : InlineFeature):
@@ -124,7 +134,7 @@ class ListItem(BlockContainer):
 	def __init__(self):
 		super().__init__()
 
-class List(BlockNode, NodeContainer[ListItem]):
+class List(NodeContainer[ListItem], BlockNode):
 	def _validate_sub( self, sub : ListItem ) -> None:
 		assert isinstance( sub, ListItem ), sub
 

@@ -4,7 +4,7 @@
 """
 import argparse, os
 
-from mdl import tree_parser, parse_to_doc, doc_tree_dump, format_html, format_markdown
+from mdl import tree_parser, parse_to_doc, doc_tree_dump, format_html, format_markdown, doc_process
 
 #class MyParser(argparse.Ar
 cli_args = argparse.ArgumentParser( description = 'Process and MDL document' )
@@ -24,6 +24,7 @@ if args.dump_parse:
 	tree_parser.dump(node)
 
 doc = parse_to_doc.convert( node )
+doc_process.doc_process( doc )
 if args.dump_doc:
 	doc_tree_dump.dump(doc)
 
