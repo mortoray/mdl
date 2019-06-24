@@ -151,13 +151,15 @@ class HtmlWriter(object):
 		self.output.write( '</footer>' )
 		
 	def _write_code( self, node ):
-		#self.output.write( '<pre>{}</pre>'.format( node.text ) )
-		if node.class_ == "php" and not "<?php" in node.text:
-			lexer = pygments.lexers.php.PhpLexer( startinline = True )
+		if node.class_ == '':
+			block = '<div class="codehilite"><pre>' + escape( node.text ) + '</pre></div>'
 		else:
-			lexer = pygments.lexers.get_lexer_for_filename( 'file.' + node.class_ )
-		formatter = pygments.formatters.HtmlFormatter( cssclass = 'codehilite' )
-		block = pygments.highlight( node.text, lexer, formatter )
+			if node.class_ == "php" and not "<?php" in node.text:
+				lexer = pygments.lexers.php.PhpLexer( startinline = True )
+			else:
+				lexer = pygments.lexers.get_lexer_for_filename( 'file.' + node.class_ )
+			formatter = pygments.formatters.HtmlFormatter( cssclass = 'codehilite' )
+			block = pygments.highlight( node.text, lexer, formatter )
 		
 		self.output.write( "<div class='codehilitewrap'>" )
 		self.output.write( block )
