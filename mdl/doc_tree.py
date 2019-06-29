@@ -164,6 +164,8 @@ class Code(BlockNode):
 		self.text = text
 		self.class_ = class_
 	
+	def visit( self, proc : typing.Callable[[Node],bool] ) -> None:
+		pass
 
 class EmbedClass(Enum):
 	image = 1
