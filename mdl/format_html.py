@@ -1,7 +1,7 @@
 # A rough test of formatting as HTML
 
 import io
-from . import doc_tree
+from . import doc_tree, doc_loader
 import pygments # type: ignore
 from pygments import lexers, formatters # type: ignore
 from pygments.lexers import php # type: ignore
@@ -181,6 +181,15 @@ class HtmlWriter(object):
 			self.output.write( '<p class="embed">' )
 			self.output.write( '<img src="{}"/>'.format( node.url ) )
 			self.output.write( '</p>' )
+			
+		elif node.class_ == doc_tree.EmbedClass.abstract:
+			doc = doc_loader.get_document_info( node.url )
+			self.output.write( '<div class="embed-doc">' )
+			self.output.write( '<h1><a href="{}">{}</a></h1>'.format( escape( node.url), escape(doc['title'] ) ) )
+			self.output.write( '<p class="author"><a href="{}"><img src="{}"/>{}</a></p>'.format( 
+				escape( doc['author_url'] ), escape( doc['author_pic'] ), escape( doc['author'] ) ) )
+				
+			self.output.write( '</div>' )
 		else:
 			#TODO: emit error/warning?
 			pass
