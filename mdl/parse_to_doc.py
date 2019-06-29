@@ -115,6 +115,7 @@ def _convert_inlines( ctx, node ):
 
 embed_map = {
 	'image': doc_tree.EmbedClass.image,
+	'abstract': doc_tree.EmbedClass.abstract,
 }
 
 def _convert_block( ctx, nodes_iter, prev_in_section ):

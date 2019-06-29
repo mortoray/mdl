@@ -187,9 +187,13 @@ class MarkdownWriter(render.Writer):
 		return text
 		
 	def _get_embed( self, node : doc_tree.Embed ) -> str:
-		assert node.class_ == doc_tree.EmbedClass.image
-		return "\n![]({})\n".format( node.url )
-		
+		if node.class_ == doc_tree.EmbedClass.image:
+			return "\n![]({})\n".format( node.url )
+		elif node.class_ == doc_tree.EmbedClass.abstract:
+			# Only for dev.to, this'll need a configuration
+			return "\n{{% post {} %}}\n".format( node.url )
+		else:
+			raise f"Unsupported embed {node.class_.name}"
 		
 		
 def _count_longest_backtick_chain( text : str ) -> int:

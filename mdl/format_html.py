@@ -177,7 +177,11 @@ class HtmlWriter(object):
 		self.output.write( '</ul>' )
 
 	def _write_embed( self, node ):
-		self.output.write( '<p class="embed">' )
-		self.output.write( '<img src="{}"/>'.format( node.url ) )
-		self.output.write( '</p>' )
+		if node.class_ == doc_tree.EmbedClass.image:
+			self.output.write( '<p class="embed">' )
+			self.output.write( '<img src="{}"/>'.format( node.url ) )
+			self.output.write( '</p>' )
+		else:
+			#TODO: emit error/warning?
+			pass
 		
