@@ -201,6 +201,15 @@ class Source(object):
 			self._at = m.end()
 			return m, text
 		return None, None
+	
+	def map_position(self, where : int) -> Tuple[int,int]:
+		lines = self._text.count( '\n', 0, self._at )
+		last_line = self._text.rfind( '\n', 0, self._at )
+		return ( lines, self._at - last_line )
+		
+	@property
+	def position(self) -> int:
+		return self._at
 		
 		
 # Parses a file
@@ -311,10 +320,11 @@ def _parse_container( root, src, indent ):
 			para = Node(NodeType.block)
 			para.class_ = tag.group(1)
 			while True:
-				arg = _parse_string( src, '}' )
-				if arg == None: 
+				arg, end = _parse_string( src, '}' )
+				if end: 
 					break
-				para.add_arg( arg )
+				if arg is not None:
+					para.add_arg( arg )
 				
 			append_block( para )
 			continue
@@ -459,6 +469,7 @@ def _parse_line( src, terminal = '\n' ):
 	return bits
 
 def _parse_raw_escape_to( src, close_char ):
+	start = src.position
 	text = ''
 	
 	while not src.is_at_end():
@@ -470,26 +481,30 @@ def _parse_raw_escape_to( src, close_char ):
 		
 		text += c
 		
-	raise Exception( "Unclosed text feature {}".format( close_char ) )
+	raise Exception( f"{src.map_position(start)} Unclosed raw text feature {close_char}" )
 
 
-def _parse_string( src, close_char ):
+def _parse_string( src, close_char : str ) -> Tuple[Optional[str], bool]:
 	text = ''
 	
 	src.skip_space()
 	has = False
+	end = False
 	while not src.is_at_end():
 		c = src.next_char()
 		if c == '\\':
 			c = src.next_char()
 			has = True
-		elif c == close_char or _syntax_skip_space.search( c ) != None:
+		elif c == close_char:
+			end = True
+			break
+		elif _syntax_skip_space.search( c ) != None:
 			break
 		else:
 			text += c
 			has = True
 			
-	return text if has else None
+	return (text if has else None, end)
 		
 	
 def _parse_para( src, indent ):
