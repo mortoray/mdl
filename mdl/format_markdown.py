@@ -191,7 +191,7 @@ class MarkdownWriter(render.Writer):
 			return "\n![]({})\n".format( node.url )
 		elif node.class_ == doc_tree.EmbedClass.abstract:
 			# Only for dev.to, this'll need a configuration
-			return "\n{{% post {} %}}\n".format( node.url )
+			return "\n{{% link {} %}}\n".format( node.url )
 		else:
 			raise f"Unsupported embed {node.class_.name}"
 		
