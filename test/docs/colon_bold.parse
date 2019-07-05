@@ -1,0 +1,15 @@
+container 
+	block 
+		text A list with bold bits.
+	block/- 
+		inline/: 
+			text  One
+		text  Value
+	block/- 
+		inline/: 
+			text  Two and three
+		text  More values
+	block 
+		inline/: 
+			text In a plain paragraph
+		text  the colon doesn't change anything.

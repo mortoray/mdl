@@ -8,14 +8,14 @@ from __future__ import annotations # type: ignore
 import typing, abc
 from enum import Enum
 
+VisitCallback = typing.Tuple[ typing.Callable[['Node'],bool], typing.Callable[['Node'],None] ]
 class Node(abc.ABC):
 	def __init__(self):
 		super().__init__()
 		
 	@abc.abstractmethod
-	def visit( self, proc : typing.Callable[[Node],bool] ) -> None:
+	def visit( self, proc : VisitCallback ) -> None:
 		pass
-		
 		
 T = typing.TypeVar('T', bound = Node)
 class NodeContainer(typing.Generic[T]):
@@ -44,10 +44,11 @@ class NodeContainer(typing.Generic[T]):
 	def first_sub( self ) -> T:
 		return self._sub[0]
 		
-	def visit( self, proc : typing.Callable[[Node],bool] ) -> None:
+	def visit( self, proc : VisitCallback ) -> None:
 		for node in self._sub:
-			if proc(node):
+			if proc[0](node):
 				node.visit( proc )
+			proc[1](node)
 			
 
 class BlockNode(Node):
@@ -113,7 +114,7 @@ class Text(Element):
 		super().__init__()
 		self.text = text
 		
-	def visit( self, proc : typing.Callable[[Node],bool] ) -> None:
+	def visit( self, proc : VisitCallback ) -> None:
 		pass
 		
 		
@@ -142,10 +143,12 @@ class List(NodeContainer[ListItem], BlockNode):
 class InlineFeature(object):
 	def __init__(self, name : str):
 		self.name = name
-		
+
+feature_none = InlineFeature("none")
 feature_bold = InlineFeature("bold")
 feature_italic = InlineFeature("italic")
 feature_code = InlineFeature("code")
+feature_header = InlineFeature("header")
 
 class Link(ParagraphElement):
 	def __init__(self, url : str):
@@ -164,7 +167,7 @@ class Code(BlockNode):
 		self.text = text
 		self.class_ = class_
 	
-	def visit( self, proc : typing.Callable[[Node],bool] ) -> None:
+	def visit( self, proc : VisitCallback ) -> None:
 		pass
 
 class EmbedClass(Enum):
@@ -177,5 +180,5 @@ class Embed(BlockNode):
 		self.class_ = class_
 		self.url = url
 		
-	def visit( self, proc : typing.Callable[[Node],bool] ) -> None:
+	def visit( self, proc : VisitCallback ) -> None:
 		pass

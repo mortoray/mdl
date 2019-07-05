@@ -1,4 +1,4 @@
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup #type: ignore
 from urllib import request
 
 def get_document_info( url ):

@@ -74,16 +74,21 @@ class HtmlWriter(object):
 	
 	# TODO: yucky string constants 
 	inline_map = {
-		'italic': 'i',
-		'bold': 'b',
-		'code': 'code',
+		'italic': ( '<i>', '</i>' ),
+		'bold': ( '<b>', '</b>' ),
+		'code': ( '<code>', '</code>' ),
+		'header': ( '<strong>', ':</strong>' ),
 	}
 
-	def _write_inline( self, node ):
+	def _write_inline( self, node : doc_tree.Inline ) -> None:
+		if node.feature == doc_tree.feature_none:
+			self._write_sub(node)
+			return
+			
 		html_feature = type(self).inline_map[node.feature.name]
-		self.output.write( "<{}>".format( html_feature ) )
+		self.output.write( html_feature[0] )
 		self._write_sub( node )
-		self.output.write( "</{}>".format( html_feature ) )
+		self.output.write( html_feature[1] )
 		
 	def _write_block( self, node ):
 		tag = 'p'

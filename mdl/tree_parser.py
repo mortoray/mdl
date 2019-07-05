@@ -1,4 +1,5 @@
 # Tree parsing
+from __future__ import annotations # type: ignore
 import regex as re # type: ignore
 from typing import *
 
@@ -76,10 +77,10 @@ class Node(object):
 	def get_args( self ) -> List[str]:
 		return self._args[:]
 		
-	def has_args( self ):
+	def has_args( self ) -> bool:
 		return len(self._args) > 0
 		
-	def promote_to_container( self ):
+	def promote_to_container( self ) -> None:
 		first_child = Node( self._type )
 		first_child._text = self._text
 		self._text = ''
@@ -90,11 +91,11 @@ class Node(object):
 		self._type = NodeType.container
 		
 	
-	def add_subs( self, subs ):
+	def add_subs( self, subs : Sequence[Node] ) -> None:
 		for sub in subs:
 			self.add_sub( sub )
 			
-	def add_sub( self, sub ):
+	def add_sub( self, sub : Node ) -> None:
 		self.validate_sub( sub )
 		self._sub.append( sub )
 			
@@ -255,7 +256,7 @@ class FeatureParse(object):
 		fp.is_raw = True
 		return fp
 	
-_syntax_feature = re.compile(r'([\*_\[\(`])')
+_syntax_feature = re.compile(r'([\*_\[\(`\:])')
 _syntax_feature_map = {
 	'*': FeatureParse.open_close('*','*'),
 	'_': FeatureParse.open_close('_','_'),
@@ -395,8 +396,8 @@ def _expand_false_node(node):
 	return sub
 	
 	
-def _parse_line( src, terminal = '\n' ):
-	bits = []
+def _parse_line( src : Source, terminal : str = '\n' ) -> Sequence[Node]:
+	bits : List[Node] = []
 	text = ''
 	
 	def end_text():
@@ -418,6 +419,20 @@ def _parse_line( src, terminal = '\n' ):
 			bits[-1].text += bit.text
 		else:
 			bits.append(bit)
+			
+	def mark_header():
+		nonlocal bits
+		at = 0
+		first = bits[at] if len(bits) > 0 else None
+		while first is not None and first.class_ == ':':
+			at += 1
+			
+		collect = bits[at:]
+		bits = bits[:at]
+		header = Node(NodeType.inline)
+		header.class_ = ':'
+		header.add_subs( collect )
+		push_bit( header )
 		
 	def end_bits():
 		pass
@@ -447,6 +462,10 @@ def _parse_line( src, terminal = '\n' ):
 		if feature_match != None:
 			feature_class = feature_match.group(1)
 			end_text()
+			
+			if feature_class == ':':
+				mark_header()
+				continue
 			
 			feature_parse = _syntax_feature_map[feature_class]
 			

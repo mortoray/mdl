@@ -193,7 +193,7 @@ class MarkdownWriter(render.Writer):
 			# Only for dev.to, this'll need a configuration
 			return "\n{{% link {} %}}\n".format( node.url )
 		else:
-			raise f"Unsupported embed {node.class_.name}"
+			raise Exception(f"Unsupported embed {node.class_.name}")
 		
 		
 def _count_longest_backtick_chain( text : str ) -> int:
