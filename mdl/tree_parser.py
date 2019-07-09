@@ -423,8 +423,7 @@ def _parse_line( src : Source, terminal : str = '\n' ) -> Sequence[Node]:
 	def mark_header():
 		nonlocal bits
 		at = 0
-		first = bits[at] if len(bits) > 0 else None
-		while first is not None and first.class_ == ':':
+		while len(bits) > 0 and bits[at].class_ == ':':
 			at += 1
 			
 		collect = bits[at:]
