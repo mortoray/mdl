@@ -8,3 +8,5 @@ test:
 	python test.py
 .PHONY: test
 	
+freeze:
+	pip freeze --local > requirements.txt

@@ -396,9 +396,10 @@ def _expand_false_node(node):
 	return sub
 	
 	
-def _parse_line( src : Source, terminal : str = '\n' ) -> Sequence[Node]:
+def _parse_line( src : Source, terminal : Optional[str] = None ) -> Sequence[Node]:
 	bits : List[Node] = []
 	text = ''
+	end_char = terminal if terminal is not None else '\n'
 	
 	def end_text():
 		nonlocal text
@@ -436,9 +437,11 @@ def _parse_line( src : Source, terminal : str = '\n' ) -> Sequence[Node]:
 	def end_bits():
 		pass
 			
+	has_end_char = False
 	while not src.is_at_end():
 		c = src.peek_char()
-		if c == terminal:
+		if c == end_char:
+			has_end_char = True
 			_ = src.next_char()
 			break
 			
@@ -482,6 +485,9 @@ def _parse_line( src : Source, terminal : str = '\n' ) -> Sequence[Node]:
 			
 		text += src.next_char()
 			
+	if terminal is not None and not has_end_char:
+		raise Exception( "unterminated-line-feature", end_char )
+		
 	end_text()
 	end_bits()
 	return bits

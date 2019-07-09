@@ -1,4 +1,7 @@
+beautifulsoup4==4.7.1
 mypy-extensions==0.4.1
 Pygments==2.4.2
+PyYAML==5.1.1
 regex==2019.6.8
 shelljob==0.5.6
+soupsieve==1.9.2

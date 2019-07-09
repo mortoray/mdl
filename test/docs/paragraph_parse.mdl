@@ -1,0 +1,3 @@
+An inline feature like _italic is not allowed to span a paragraph.
+
+So this should fail.
