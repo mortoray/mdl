@@ -88,10 +88,15 @@ def get_section(node : doc_tree.Section, indent : str) -> str:
 	return text
 	
 def get_inline(node, indent):
-	return '%{}/{}/'.format( node.feature.name, get_all_inline(node._sub) )
+	return '⁑{}｢{}｣'.format( node.feature.name, get_all_inline(node._sub) )
 
 def get_link(node, indent):
-	return '%link{{url={}}}/{}/'.format( node.url, get_all_inline(node._sub) )
+	txt = '⁑link｢'
+	txt += f'url={node.url}'
+	if node.title:
+		txt += f';title={node.title}'
+	txt += f'｣｢{get_all_inline(node._sub)}｣/'
+	return txt
 
 def get_note(node, indent):
 	return '^{{{}}}'.format( get_all_inline(node._sub) )

@@ -118,6 +118,13 @@ embed_map = {
 	'abstract': doc_tree.EmbedClass.abstract,
 }
 
+def _as_text( ctx, block : doc_tree.ElementContainer ) -> str:
+	txt = ''
+	for element in block.iter_sub():
+		assert isinstance( element, doc_tree.Text )
+		txt += element.text
+	return txt
+	
 def _convert_block( ctx, nodes_iter, prev_in_section ):
 	para = None
 	
@@ -142,6 +149,7 @@ def _convert_block( ctx, nodes_iter, prev_in_section ):
 				ps = para_subs[0]
 				assert ps.len_sub() == 1 and isinstance( ps.first_sub(), doc_tree.Link )
 				note_node.url = ps.first_sub().url
+				note_node.title = _as_text( ctx, ps.first_sub())
 			else:
 				raise Exception( "Unexpected note node: " + note_node )
 			

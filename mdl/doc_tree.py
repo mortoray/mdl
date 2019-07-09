@@ -151,9 +151,10 @@ feature_code = InlineFeature("code")
 feature_header = InlineFeature("header")
 
 class Link(ParagraphElement):
-	def __init__(self, url : str):
+	def __init__(self, url : str, title : typing.Optional[str] = None ):
 		super().__init__()
 		self.url = url
+		self.title = title
 		
 
 class Note(ParagraphElement):

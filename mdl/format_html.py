@@ -133,7 +133,10 @@ class HtmlWriter(object):
 
 	def _write_link( self, node ):
 		# TODO: more escaping
-		self.output.write( "<a href='{}'>".format( node.url ) )
+		title = ''
+		if node.title:
+			title = f' title="{node.title}"'
+		self.output.write( f"<a href='{node.url}'{title}>" )
 		self._write_sub( node)
 		self.output.write( "</a>" )
 
