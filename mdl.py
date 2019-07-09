@@ -17,6 +17,7 @@ cli_args.add_argument( 'mdl_file', metavar = 'mdl-file', nargs = 1, help='Input 
 cli_args.add_argument( '--write-html', nargs=1, help='Write an HTML formatted file' )
 cli_args.add_argument( '--write-markdown', nargs=1, help='Write a Markdown formatted file' )
 
+
 args = cli_args.parse_args()
 mdl_file = args.mdl_file[0]
 

@@ -2,7 +2,7 @@
 	Test driver for document tests.
 """
 import os, yaml
-from mdl import tree_parser
+from mdl import tree_parser, parse_to_doc, format_html, doc_process
 from shelljob import fs
 
 def passed(text : str) -> str:
@@ -37,6 +37,19 @@ for fname in fs.find( 'test/docs', name_regex = r".*\.mdl" ):
 			except Exception as e:
 				okay = True
 			status( 'Fail-Parse', okay )
+			
+			
+	html_name = base + '.html'
+	if os.path.exists( html_name ):
+		parsed = tree_parser.parse_file( fname )
+		doc = parse_to_doc.convert( parsed )
+		doc_process.doc_process( doc )
+		
+		html = format_html.format_html( doc )
+		with open( html_name, 'r', encoding = 'utf-8' ) as check:
+			check_html = check.read()
+		
+		status( 'HTML', html == check_html )
 		
 	print()
 		

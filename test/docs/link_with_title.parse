@@ -1,0 +1,11 @@
+container 
+	block 
+		text A link with a 
+		inline/[ 
+			text title
+		inline/( ^link
+		text .
+	block/^ link
+		inline/[ 
+			text My Title
+		inline/( http://somewhere/
