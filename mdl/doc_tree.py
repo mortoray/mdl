@@ -104,6 +104,9 @@ class BlockClass(object):
 	def __init__(self, name):
 		self.name = name
 		
+	def __str__(self) -> str:
+		return self.name
+		
 block_quote = BlockClass('quote')
 block_blurb = BlockClass('blurb')
 block_aside = BlockClass('aside')

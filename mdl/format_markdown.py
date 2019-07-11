@@ -4,6 +4,7 @@ import io
 from . import doc_tree
 from . import render
 from .format_html import HtmlWriter
+import regex as re # type: ignore
 
 from typing import *
 
@@ -35,7 +36,7 @@ class MarkdownWriter(render.Writer):
 			return False
 
 		def fail():
-			raise Exception( "Unknown node type", node )
+			raise Exception( "unknown-node-type", node )
 		
 		_ = \
 			q( doc_tree.Block, self._get_block ) or \
@@ -58,9 +59,11 @@ class MarkdownWriter(render.Writer):
 		
 
 	inline_map = {
-		"italic": "_",
-		"bold": "*",
-		"code": "`",
+		"italic": ( "_", "_" ),
+		"bold": ( "**", "**" ),
+		"code": ( "`", "`" ),
+		"none": ( "", "" ),
+		"header": ( "**", ":**" ),
 	}
 	def _get_inline( self, node : doc_tree.Inline ) -> str:
 		if node.feature == doc_tree.feature_code:
@@ -76,17 +79,21 @@ class MarkdownWriter(render.Writer):
 				post = ' ' + post
 			return "{}{}{}".format( pre, text, post )
 		else:
-			fmt = type(self).inline_map[node.feature.name]
-			return "{}{}{}".format( fmt, self._get_paragraph_flow( node ), fmt )
+			fmt = type(self).inline_map.get(node.feature.name)
+			if fmt is None:
+				raise Exception( "unknown-inline-feature", node.feature.name )
+				
+			flow = _split_flow( self._get_paragraph_flow( node ) )
+			return "{}{}{}{}{}".format( flow[0], fmt[0], flow[1], fmt[1], flow[2] )
 		
 	def _get_paragraph( self, node : Union[doc_tree.Paragraph, doc_tree.ParagraphElement] ):
 		return '\n' + self._get_paragraph_flow( node ) + '\n'
 		
 	def _get_paragraph_flow( self, node : doc_tree.ElementContainer ) -> str:
-		text = ''
+		text = []
 		for sub in node.iter_sub():
-			text += self._get_element( sub )
-		return text
+			text.append( self._get_element( sub ) )
+		return "".join(text)
 		
 	def _get_element( self, elm : doc_tree.Element ) -> str:
 		text = ""
@@ -110,35 +117,44 @@ class MarkdownWriter(render.Writer):
 		
 
 	def _get_quote( self, node : doc_tree.Block ) -> str:
-		return "\n>{}\n".format( self._get_sub( node ) )
+		return "\n>{}\n".format( self._get_flow( node ) )
 
 	def _get_blurb( self, node : doc_tree.Block ) -> str:
 		return "\n----\n\n_{}_\n".format( self._get_sub( node ) )
 
+	def _get_aside( self, node : doc_tree.Block ) -> str:
+		return "\n>💭 {}\n".format( self._get_flow( node ) )
+		
+		 
 	def _get_block( self, node : doc_tree.Block ) -> str:
 		if node.class_ == doc_tree.block_quote:
 			return self._get_quote( node )
 		elif node.class_ == doc_tree.block_blurb:
 			return self._get_blurb( node )
+		elif node.class_ == doc_tree.block_aside:
+			return self._get_aside( node )
 		#else:
 		#	return self._get_paragraph( node )
-		raise Exception( "Unrecognized block type", node.class_ )
+		raise Exception( "unknown-block-type", node.class_.name )
 		
 		
-	def _get_flow( self, nodes : Sequence[ doc_tree.BlockNode ] ) -> str:
+	def _get_flow( self, node : doc_tree.BlockContainer ) -> str:
+		return self._get_flow_list( node._sub )
+		
+	def _get_flow_list( self, nodes : Sequence[ doc_tree.BlockNode ] ) -> str:
 		if len(nodes) == 1 and isinstance( nodes[0], doc_tree.Paragraph ):
 			return self._get_paragraph_flow( nodes[0] )
 			
 		text = ''
 		for node in nodes:
 			text += self._get_node( node )
-		return text
+		return text.strip()
 		
 	def _get_section( self, node : doc_tree.Section ) -> str:
 		text = "\n"
 		if not node.title is None:
 			text += "#" * node.level
-			text += self._get_flow( node.title )
+			text += self._get_flow_list( node.title )
 			text += "\n"
 		
 		return text + self._get_sub( node )
@@ -182,7 +198,7 @@ class MarkdownWriter(render.Writer):
 			assert isinstance( sub, doc_tree.ListItem ) # The only supported type
 			
 			text += "\n- " 
-			text += self._get_flow( sub._sub )
+			text += self._get_flow( sub )
 		text += "\n"
 		return text
 		
@@ -220,3 +236,13 @@ def _is_simple_list( node : doc_tree.List ) -> bool:
 			return False
 	return True
 	
+
+_split_flow_re = re.compile( r'(\s*)(.*)(\s*)' )
+"""
+	Splits text into (leading whitespace, stripped text, trailing whitespace)
+	This is needed for Markdown features where spaces break feature parsing
+"""
+def _split_flow( text : str ) -> Tuple[str, str, str]:
+	match = _split_flow_re.match( text )
+	assert match != None
+	return ( match.group(1), match.group(2), match.group(3) )
