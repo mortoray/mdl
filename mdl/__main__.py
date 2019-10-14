@@ -5,9 +5,8 @@
 import argparse, os
 
 from mdl import  format_html, format_markdown
-import mdl
+from .document import load_document
 
-#class MyParser(argparse.Ar
 cli_args = argparse.ArgumentParser( description = 'Process and MDL document' )
 cli_args.add_argument( '--dump-parse', action='store_const', const=True, help='Dump the parse tree' )
 cli_args.add_argument( '--dump-pre-doc', action='store_const', const=True, help='Dump the pre-processing document tree' )
@@ -23,7 +22,7 @@ args = cli_args.parse_args()
 mdl_file = args.mdl_file[0]
 
 print( 'Loading MDL {}'.format( mdl_file ) )
-doc = mdl.load_document( mdl_file, 
+doc = load_document( mdl_file, 
 	_dump_parse = args.dump_parse,
 	_write_parse = args.write_parse[0] if args.write_parse else None,
 	_dump_pre_doc = args.dump_pre_doc,

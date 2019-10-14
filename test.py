@@ -4,7 +4,7 @@
 import os, yaml
 from mdl import tree_parser, parse_to_doc, format_html, doc_process
 import mdl
-from shelljob import fs
+from shelljob import fs #type: ignore
 
 def passed(text : str) -> str:
 	return '\x1b[32m{} ✔ \x1b[m'.format(text)
