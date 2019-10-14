@@ -1,7 +1,17 @@
+atomicwrites==1.3.0
+attrs==19.2.0
 beautifulsoup4==4.7.1
+more-itertools==7.2.0
 mypy-extensions==0.4.1
+packaging==19.2
+pluggy==0.13.0
+py==1.8.0
 Pygments==2.4.2
+pyparsing==2.4.2
+pytest==5.2.1
 PyYAML==5.1.1
 regex==2019.6.8
 shelljob==0.5.6
+six==1.12.0
 soupsieve==1.9.2
+wcwidth==0.1.7

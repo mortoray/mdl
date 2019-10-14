@@ -4,6 +4,7 @@ import regex as re # type: ignore
 from typing import *
 
 from enum import Enum
+from .source import Source
 
 class NodeType(Enum):
 	# may contain blocks and containers as children
@@ -154,64 +155,6 @@ class Node(object):
 	def iter_annotations( self ):
 		return iter( self._annotations )
 
-_syntax_skip_space = re.compile( r'\s+' )
-_syntax_peek_line = re.compile( r'(.*)$', re.MULTILINE )
-
-class Source(object):
-	def __init__(self, text):
-		#FEATURE: normalize text line-endings
-		
-		self._text = text
-		self._at = 0
-		self._size = len(text)
-
-	def skip_space(self):
-		self.match( _syntax_skip_space )
-	
-	def is_at_end(self):
-		return self._at >= self._size
-		
-	def peek_line(self):
-		m = _syntax_peek_line.match( self._text, self._at )
-		if m == None:
-			return ""
-		return m.group(1)
-		
-	def peek_char(self):
-		return self._text[self._at]
-		
-	def next_char(self):
-		c = self._text[self._at]
-		self._at += 1
-		return c
-		
-	def match( self, re ):
-		m = re.match( self._text, self._at )
-		if m != None:
-			self._at = m.end()
-		return m
-		
-	def peek_match( self, re ):
-		m = re.match( self._text, self._at )
-		return m
-		
-	def to_match( self, re ):
-		m = re.search( self._text, self._at )
-		if m != None:
-			text = self._text[self._at:m.start()]
-			self._at = m.end()
-			return m, text
-		return None, None
-	
-	def map_position(self, where : int) -> Tuple[int,int]:
-		lines = self._text.count( '\n', 0, self._at )
-		last_line = self._text.rfind( '\n', 0, self._at )
-		return ( lines, self._at - last_line )
-		
-	@property
-	def position(self) -> int:
-		return self._at
-		
 		
 # Parses a file
 # @param filename The name of the file to parse
@@ -227,7 +170,6 @@ def parse_file( filename ):
 
 	
 _syntax_empty_line = re.compile( r'[\p{Space_Separator}\t]*$', re.MULTILINE )
-_syntax_lead_space = re.compile( r'([\p{Space_Separator}\t]*)' )
 _syntax_line = re.compile( r'(?!//)(#+|-|/)' )
 _syntax_block = re.compile( r'(>|>>|//|\^([\p{L}\p{N}]*))\s*' )
 _syntax_tag = re.compile( r'{%\s+(\p{L}+)\s' )
@@ -283,8 +225,8 @@ def _parse_container( root, src, indent ):
 			src.next_char()
 			continue
 			
-		lead_space = src.peek_match( _syntax_lead_space ).group(1)
-		if lead_space != indent:
+		(match_indent, lead_space) = src.match_indent( indent )
+		if not match_indent:
 			# TODO: add some strong rules about what's allowed here
 			if len(lead_space) < len(indent):
 				break
@@ -295,8 +237,6 @@ def _parse_container( root, src, indent ):
 				_parse_container( child_container, src, lead_space )
 				
 			continue
-			
-		_ = src.match( _syntax_lead_space )
 		
 		annotation_match = src.match( _syntax_annotation )
 		if annotation_match != None:
@@ -321,7 +261,7 @@ def _parse_container( root, src, indent ):
 			para = Node(NodeType.block)
 			para.class_ = tag.group(1)
 			while True:
-				arg, end = _parse_string( src, '}' )
+				arg, end = src.parse_string( '}' )
 				if end: 
 					break
 				if arg is not None:
@@ -507,29 +447,7 @@ def _parse_raw_escape_to( src, close_char ):
 		
 	raise Exception( f"{src.map_position(start)} Unclosed raw text feature {close_char}" )
 
-
-def _parse_string( src, close_char : str ) -> Tuple[Optional[str], bool]:
-	text = ''
 	
-	src.skip_space()
-	has = False
-	end = False
-	while not src.is_at_end():
-		c = src.next_char()
-		if c == '\\':
-			c = src.next_char()
-			has = True
-		elif c == close_char:
-			end = True
-			break
-		elif _syntax_skip_space.search( c ) != None:
-			break
-		else:
-			text += c
-			has = True
-			
-	return (text if has else None, end)
-		
 	
 def _parse_para( src, indent ):
 	para = Node(NodeType.block)
@@ -539,10 +457,8 @@ def _parse_para( src, indent ):
 		# Parse Container preconsumes the leading space on the first entry to the paragraph, in order to do
 		# other block matching. It's not sure how this can be avoided.
 		if not first:
-			lead_space = src.peek_match( _syntax_lead_space ).group(1)
-			if lead_space != indent:
+			if not src.match_indent( indent )[0]:
 				break
-			_ = src.match( _syntax_lead_space )
 		first = False
 			
 		line = _parse_line(src)
