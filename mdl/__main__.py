@@ -31,7 +31,7 @@ doc = load_document( mdl_file,
 if args.write_html:
 	filename = args.write_html[0] 
 	print( 'Writing HTML to {}'.format( filename ) )
-	html = format_html.format_html( doc.root )
+	html = format_html.HtmlWriter().write( doc )
 	with open( filename, 'w', encoding = 'utf-8' ) as out_file:
 		out_file.write( html )
 

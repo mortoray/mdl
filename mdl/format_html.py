@@ -1,20 +1,13 @@
 # A rough test of formatting as HTML
 
-import io
+import io, html
 from . import doc_tree, doc_loader, document, doc_tree
 import pygments # type: ignore
 from pygments import lexers, formatters # type: ignore
 from pygments.lexers import php # type: ignore
 
-# TODO: Deprecated
-def format_html( root : doc_tree.Section ):
-	doc = document.Document()
-	doc.set_root( root )
-	return HtmlWriter().write( doc )
-
 def escape( text : str ) -> str:
-	return text
-		
+	return html.escape(text)
 
 class HtmlWriter:
 	def __init__(self):
@@ -23,7 +16,14 @@ class HtmlWriter:
 		
 	def write( self, doc : document.Document ) -> str:
 		self.output.write( "<html>" )
+		self.output.write( "<head>" )
+		if 'title' in doc.meta:
+			self.output.write( f"<title>{escape(doc.meta['title'])}</title>" )
+		self.output.write( "</head>" )
+		
+		self.output.write( "<body>" )
 		self._write_node( doc.root )
+		self.output.write( "</body>" )
 		self.output.write( "</html>" )
 		
 		self._write_notes()

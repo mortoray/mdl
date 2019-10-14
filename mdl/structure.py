@@ -1,13 +1,23 @@
+from __future__ import annotations
+
 from typing import  *
 import regex as re #type: ignore
 
 from .source import Source
 
-_ObjectType = Dict[str, '_EntryType']
-_ListType = List['_EntryType']
-_EntryType = Union[str, _ListType, _ObjectType]
+"""
+There appears to be no way to define these cyclic types. :(
 
-def parse_structure( data : str ) -> _ObjectType:
+ObjectType = Dict[str, 'EntryType']
+ListType = List['EntryType']
+EntryType = Union[str, 'ListType', 'ObjectType']
+"""
+#EntryType = Union[str, List[EntryType], Dict[str,EntryType]]
+EntryType = TypeVar('EntryType')
+ObjectType = Dict[str, EntryType]
+ListType = List[EntryType]
+
+def parse_structure( data : str ) -> ObjectType:
 	src = Source( data )
 	
 	return _parse_object( src, '' )
@@ -15,8 +25,8 @@ def parse_structure( data : str ) -> _ObjectType:
 	
 _syntax_name = re.compile( r'(\p{L}+):' )
 
-def _parse_object( src : Source, indent : str ) -> _ObjectType:
-	ret = {}
+def _parse_object( src : Source, indent : str ) -> ObjectType:
+	ret : ObjectType = {}
 
 	src.skip_empty_lines()
 	while not src.is_at_end():

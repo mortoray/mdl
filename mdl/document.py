@@ -1,11 +1,16 @@
-from . import tree_parser, parse_to_doc, doc_process, doc_tree, doc_tree_dump
+from . import tree_parser, parse_to_doc, doc_process, doc_tree, doc_tree_dump, structure
 
 class Document:
 	def __init__(self ):
 		self.root : Optional[doc_tree.Section] = None
+		self.meta : structure.ObjectType = {}
 		
 	def set_root( self, node : doc_tree.Section ) -> None:
 		self.root = node
+		
+	def set_meta( self, meta : structure.ObjectType ) -> None:
+		self.meta = meta
+		
 		
 def load_document( path : str, *, 
 	_dump_parse = False,
@@ -19,15 +24,18 @@ def load_document( path : str, *,
 	if _write_parse:
 		with open( _write_parse, 'w', encoding = 'utf-8' ) as out:
 			out.write( tree_parser.get_dump( node ) )
-		
-	assert node.type == tree_parser.NodeType.container
+	
+	doc = Document()
+	
 	# TODO: split on matter, each a separate doc
+	assert node.type == tree_parser.NodeType.container
 	assert not node.sub_is_empty()
 	matter = node.iter_sub()[0]
 	if matter.type == tree_parser.NodeType.matter:
-		print("Have matter")
+		meta = structure.parse_structure( matter.text )
+		doc.set_meta( meta )
 	
-	doc = Document()
+	
 	root = parse_to_doc.convert( node )
 	if _dump_pre_doc:
 		doc_tree_dump.dump( root )
