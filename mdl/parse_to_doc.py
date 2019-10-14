@@ -40,8 +40,8 @@ class _NodeIterator(object):
 	def has_next(self):
 		return self._at < len(self._nodes)
 		
-	
-def convert( node ):
+
+def convert( node : tree_parser.Node ) -> doc_tree.Section:
 	assert node.type == tree_parser.NodeType.container
 	
 	ctx = _ConvertContext()

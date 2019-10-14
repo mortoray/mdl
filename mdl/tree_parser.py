@@ -159,7 +159,7 @@ class Node(object):
 # Parses a file
 # @param filename The name of the file to parse
 # @return A node representing the document
-def parse_file( filename ):
+def parse_file( filename : str ) -> Node:
 	in_file = open( filename, 'r', encoding = 'utf-8' )
 	in_text = in_file.read()
 	in_source = Source(in_text)

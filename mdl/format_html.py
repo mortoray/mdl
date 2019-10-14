@@ -6,8 +6,11 @@ import pygments # type: ignore
 from pygments import lexers, formatters # type: ignore
 from pygments.lexers import php # type: ignore
 
+# TODO: Deprecated
 def format_html( root : doc_tree.Section ):
-	return HtmlWriter().write( document.Document(root) )
+	doc = document.Document()
+	doc.set_root( root )
+	return HtmlWriter().write( doc )
 
 def escape( text : str ) -> str:
 	return text
@@ -18,7 +21,7 @@ class HtmlWriter:
 		self.output = io.StringIO()
 		self.notes = []
 		
-	def write( self, doc : document.Document ):
+	def write( self, doc : document.Document ) -> str:
 		self.output.write( "<html>" )
 		self._write_node( doc.root )
 		self.output.write( "</html>" )

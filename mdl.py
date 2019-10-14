@@ -4,7 +4,8 @@
 """
 import argparse, os
 
-from mdl import tree_parser, parse_to_doc, doc_tree_dump, format_html, format_markdown, doc_process
+from mdl import  format_html, format_markdown
+import mdl
 
 #class MyParser(argparse.Ar
 cli_args = argparse.ArgumentParser( description = 'Process and MDL document' )
@@ -22,33 +23,22 @@ args = cli_args.parse_args()
 mdl_file = args.mdl_file[0]
 
 print( 'Loading MDL {}'.format( mdl_file ) )
-node = tree_parser.parse_file( mdl_file )
-
-if args.dump_parse:
-	tree_parser.dump( node )
-if args.write_parse:
-	with open( args.write_parse[0], 'w', encoding = 'utf-8' ) as out:
-		out.write( tree_parser.get_dump( node ) )
-	
-
-doc = parse_to_doc.convert( node )
-if args.dump_pre_doc:
-	doc_tree_dump.dump(doc)
-	
-doc_process.doc_process( doc )
-if args.dump_doc:
-	doc_tree_dump.dump(doc)
+doc = mdl.load_document( mdl_file, 
+	_dump_parse = args.dump_parse,
+	_write_parse = args.write_parse[0] if args.write_parse else None,
+	_dump_pre_doc = args.dump_pre_doc,
+	_dump_doc = args.dump_doc )
 
 if args.write_html:
 	filename = args.write_html[0] 
 	print( 'Writing HTML to {}'.format( filename ) )
-	html = format_html.format_html( doc )
+	html = format_html.format_html( doc.root )
 	with open( filename, 'w', encoding = 'utf-8' ) as out_file:
 		out_file.write( html )
 
 if args.write_markdown:
 	filename = args.write_markdown[0] 
 	print( 'Writing Markdown to {}'.format( filename ) )
-	markdown = format_markdown.format_markdown( doc )
+	markdown = format_markdown.format_markdown( doc.root )
 	with open( filename, 'w', encoding = 'utf-8' ) as out_file:
 		out_file.write( markdown )

@@ -1,7 +1,7 @@
 all: check test
 
 check:
-	mypy mdl.py
+	python -m mypy *.py
 .PHONY: check
 
 test:

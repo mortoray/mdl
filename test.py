@@ -3,6 +3,7 @@
 """
 import os, yaml
 from mdl import tree_parser, parse_to_doc, format_html, doc_process
+import mdl
 from shelljob import fs
 
 def passed(text : str) -> str:
@@ -41,11 +42,10 @@ for fname in fs.find( 'test/docs', name_regex = r".*\.mdl" ):
 			
 	html_name = base + '.html'
 	if os.path.exists( html_name ):
-		parsed = tree_parser.parse_file( fname )
-		doc = parse_to_doc.convert( parsed )
-		doc_process.doc_process( doc )
+		doc = mdl.load_document( fname )
+		writer = mdl.HtmlWriter()
+		html = writer.write( doc )
 		
-		html = format_html.format_html( doc )
 		with open( html_name, 'r', encoding = 'utf-8' ) as check:
 			check_html = check.read()
 		
