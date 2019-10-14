@@ -1,25 +1,26 @@
 # A rough test of formatting as HTML
 
 import io
-from . import doc_tree, doc_loader
+from . import doc_tree, doc_loader, document, doc_tree
 import pygments # type: ignore
 from pygments import lexers, formatters # type: ignore
 from pygments.lexers import php # type: ignore
 
-def format_html( root ):
-	return HtmlWriter().write( root )
+def format_html( root : doc_tree.Section ):
+	return HtmlWriter().write( document.Document(root) )
 
 def escape( text : str ) -> str:
 	return text
-	
-class HtmlWriter(object):
+		
+
+class HtmlWriter:
 	def __init__(self):
 		self.output = io.StringIO()
 		self.notes = []
 		
-	def write( self, root ):
+	def write( self, doc : document.Document ):
 		self.output.write( "<html>" )
-		self._write_node( root )
+		self._write_node( doc.root )
 		self.output.write( "</html>" )
 		
 		self._write_notes()
@@ -101,6 +102,9 @@ class HtmlWriter(object):
 		elif node.class_ == doc_tree.block_blurb:
 			tag = 'footer'
 			class_ = 'blurb'
+		elif node.class_ == doc_tree.block_promote:
+			tag = 'div'
+			class_ = 'promote'
 			
 		self.output.write( "<{} class='{}'>".format(tag, class_) )
 		self._write_sub( node )

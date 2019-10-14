@@ -125,6 +125,10 @@ class MarkdownWriter(render.Writer):
 	def _get_aside( self, node : doc_tree.Block ) -> str:
 		return "\n>💭 {}\n".format( self._get_flow( node ) )
 		
+	def _get_promote( self, node : doc_tree.Block ) -> str:
+		return "\n>{}\n".format( self._get_flow( node ) )
+		
+		
 		 
 	def _get_block( self, node : doc_tree.Block ) -> str:
 		if node.class_ == doc_tree.block_quote:
@@ -133,6 +137,8 @@ class MarkdownWriter(render.Writer):
 			return self._get_blurb( node )
 		elif node.class_ == doc_tree.block_aside:
 			return self._get_aside( node )
+		elif node.class_ == doc_tree.block_promote:
+			return self._get_promote( node )
 		#else:
 		#	return self._get_paragraph( node )
 		raise Exception( "unknown-block-type", node.class_.name )

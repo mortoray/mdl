@@ -110,6 +110,7 @@ class BlockClass(object):
 block_quote = BlockClass('quote')
 block_blurb = BlockClass('blurb')
 block_aside = BlockClass('aside')
+block_promote = BlockClass('promote')
 		
 		
 class Text(Element):

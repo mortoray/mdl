@@ -184,10 +184,13 @@ def _convert_block( ctx, nodes_iter, prev_in_section ):
 			# TODO: probably all classes should be handled with annotations
 			blurb = node.get_annotation( "Blurb" )
 			aside = node.get_annotation( "Aside" )
+			promote = node.get_annotation( "Promote" )
 			if blurb != None:
 				para = doc_tree.Block( doc_tree.block_blurb, para_subs )
 			elif aside != None:
 				para = doc_tree.Block( doc_tree.block_aside, para_subs  )
+			elif promote != None:
+				para = doc_tree.Block( doc_tree.block_promote, para_subs )
 			else:
 				assert len(para_subs) == 1
 				para = para_subs[0]
