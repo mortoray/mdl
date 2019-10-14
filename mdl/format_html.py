@@ -30,6 +30,12 @@ class HtmlWriter:
 		
 		return self.output.getvalue()
 		
+	def write_body( self, doc : document.Document ) -> str:
+		self._write_node( doc.root )
+		self._write_notes()
+		return self.output.getvalue()
+		
+		
 	# TODO: Does Python have a visitor pattern?
 	# TODO: I sure miss C++ macro's here, how can I Reduce the duplication in PYthon?
 	def _write_node( self, node ):
