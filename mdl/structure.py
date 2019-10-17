@@ -23,7 +23,7 @@ def parse_structure( data : str ) -> ObjectType:
 	return _parse_object( src, '' )
 	
 	
-_syntax_name = re.compile( r'(\p{L}+):' )
+_syntax_name = re.compile( r'([\p{L}-]+):' )
 
 def _parse_object( src : Source, indent : str ) -> ObjectType:
 	ret : ObjectType = {}
