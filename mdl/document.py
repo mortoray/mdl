@@ -1,5 +1,5 @@
 from . import tree_parser, parse_to_doc, doc_process, doc_tree, doc_tree_dump, structure
-import pprint
+from typing import *
 
 class Document:
 	def __init__(self ):
@@ -12,6 +12,12 @@ class Document:
 		
 	def set_meta( self, meta : structure.ObjectType ) -> None:
 		self.meta = meta
+		
+	def find_first_sub( self, match : Callable[['Document'],bool] ) -> Optional['Document']:
+		for sub in self.sub:
+			if match( sub ):
+				return sub
+		return None
 
 def dump_document( doc : Document, *, _first = True ) -> str:
 	text = ''
@@ -96,3 +102,4 @@ def load_document( path : str, *,
 		
 	return doc
 	
+__all__ = [ 'Document', 'load_document', 'dump_document' ]

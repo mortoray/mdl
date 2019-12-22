@@ -11,6 +11,9 @@ def escape( text : str ) -> str:
 
 class HtmlWriter:
 	def __init__(self):
+		self._reset()
+		
+	def _reset(self):
 		self.output = io.StringIO()
 		self.notes = []
 		
@@ -31,6 +34,7 @@ class HtmlWriter:
 		return self.output.getvalue()
 		
 	def write_body( self, doc : document.Document ) -> str:
+		self._reset()
 		self._write_node( doc.root )
 		self._write_notes()
 		return self.output.getvalue()
