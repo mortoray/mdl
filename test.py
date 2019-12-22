@@ -2,7 +2,7 @@
 	Test driver for document tests.
 """
 import os, yaml
-from mdl import tree_parser, parse_to_doc, format_html, doc_process
+from mdl import tree_parser, parse_to_doc, format_html, doc_process, document
 import mdl
 from shelljob import fs #type: ignore
 
@@ -27,6 +27,16 @@ for fname in fs.find( 'test/docs', name_regex = r".*\.mdl" ):
 			check_dump = check.read()
 		
 		status( 'Parse', parse_dump == check_dump )
+		
+	doc_name = base + '.doc'
+	if os.path.exists( doc_name ):
+		doc = mdl.load_document( fname )
+		doc_dump = document.dump_document( doc )
+		with open( doc_name, 'r', encoding = 'utf-8' ) as check:
+			check_dump = check.read()
+			
+		status( 'Doc', doc_dump == check_dump )
+		
 		
 	yaml_name = base + '.yaml'
 	if os.path.exists( yaml_name ):

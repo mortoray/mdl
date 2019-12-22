@@ -1,0 +1,22 @@
++++
+title: "A Document with a sub-document."
+desc: "A desc"
++++
+<Section:0>
+	<Paragraph>
+		Some text.
++++
+document: "related"
+title: "sub-document"
++++
+<Section:0>
+	<Paragraph>
+		Related stuff.
++++
+document: "more"
++++
+<Section:0>
+	<Paragraph>
+		First Paragraph
+	<Paragraph>
+		Second paragraph.

@@ -91,7 +91,18 @@ class Node(object):
 		
 		self._type = NodeType.container
 		
-	
+	def remove_sub_at( self, index : int ) -> None:
+		del self._sub[index]
+		
+	"""
+		Splits this container node at the index, keeping children before the index in this container and those after in the returned container.
+	"""
+	def split_at( self, index : int ) -> Node:
+		container = Node( self._type )
+		container._sub = self._sub[index:]
+		self._sub = self._sub[:index]
+		return container
+		
 	def add_subs( self, subs : Sequence[Node] ) -> None:
 		for sub in subs:
 			self.add_sub( sub )
@@ -175,7 +186,7 @@ _syntax_block = re.compile( r'(>|>>|//|\^([\p{L}\p{N}]*))\s*' )
 _syntax_tag = re.compile( r'{%\s+(\p{L}+)\s' )
 _syntax_raw = re.compile( r'(```)' )
 _syntax_raw_end = re.compile( r'(^```)', re.MULTILINE )
-_syntax_matter = re.compile( r'(^\+\+\+)') 
+_syntax_matter = re.compile( r'(^\+\+\+)', re.MULTILINE ) 
 _syntax_matter_end = re.compile( r'(^\+\+\+$)', re.MULTILINE )
 _syntax_annotation = re.compile( r'@(\p{L}+)' )
 _syntax_rest_line = re.compile( r'(.*)$', re.MULTILINE )
@@ -303,7 +314,6 @@ def _parse_container( root, src, indent ):
 		matter_match = src.match( _syntax_matter )
 		if matter_match != None:
 			matter = Node(NodeType.matter)
-			# TODO: parse data, matter.data = yaml-like parsing
 			end_match, raw_text = src.to_match(_syntax_matter_end)
 			assert end_match != None
 			matter.text = raw_text

@@ -5,6 +5,7 @@ class Document:
 	def __init__(self ):
 		self.root : Optional[doc_tree.Section] = None
 		self.meta : structure.ObjectType = {}
+		self.sub : List[Document] = []
 		
 	def set_root( self, node : doc_tree.Section ) -> None:
 		self.root = node
@@ -12,13 +13,24 @@ class Document:
 	def set_meta( self, meta : structure.ObjectType ) -> None:
 		self.meta = meta
 
-def dump_document( doc : Document ) -> None:
-	print( structure.dump_structure( doc.meta ) )
-	doc_tree_dump.dump( doc.root )
+def dump_document( doc : Document, *, _first = True ) -> str:
+	text = ''
+	if doc.meta:
+		text += "+++\n"
+		text += structure.dump_structure( doc.meta ) 
+		text += "+++\n"
+	elif not _first:
+		text += "+++\n"
+	text += doc_tree_dump.get( doc.root )
+	
+	for sub in doc.sub:
+		text += dump_document( sub, _first = False )
+	return text
 		
 def load_document( path : str, *, 
 	_dump_parse = False,
 	_write_parse = None,
+	_write_doc = None,
 	_dump_pre_doc = False,
 	_dump_doc = False
 	) -> Document:
@@ -29,26 +41,58 @@ def load_document( path : str, *,
 		with open( _write_parse, 'w', encoding = 'utf-8' ) as out:
 			out.write( tree_parser.get_dump( node ) )
 	
-	doc = Document()
-	
-	# TODO: split on matter, each a separate doc
 	assert node.type == tree_parser.NodeType.container
 	assert not node.sub_is_empty()
+	
+	doc = Document()
+	
 	matter = node.iter_sub()[0]
 	if matter.type == tree_parser.NodeType.matter:
 		meta = structure.parse_structure( matter.text )
 		doc.set_meta( meta )
-	
-	
-	root = parse_to_doc.convert( node )
-	if _dump_pre_doc:
-		doc_tree_dump.dump( root )
+		node.remove_sub_at( 0 )
 		
-	doc.set_root( root )
+	# Split into sub-documents
+	cur_doc = doc
+	scan_node = node
+	while True:
+		scan_iter = scan_node.iter_sub()
+		new_doc = False
+		for index in range(len(scan_iter)):
+			matter = scan_iter[index]
+			if matter.type == tree_parser.NodeType.matter:
+				next_scan = scan_node.split_at( index )
+				
+				root = parse_to_doc.convert( scan_node )
+				cur_doc.set_root( root )
+				
+				cur_doc = Document()
+				doc.sub.append( cur_doc )
+				new_doc = True
+				
+				meta = structure.parse_structure( matter.text )
+				cur_doc.set_meta( meta )
+				next_scan.remove_sub_at( 0 )
+
+				scan_node = next_scan
+				break
+		
+		if not new_doc:
+			break
+	
+	root = parse_to_doc.convert( scan_node )
+	cur_doc.set_root( root )
+	
+	#if _dump_pre_doc:
+	#	doc_tree_dump.dump( root )
 	
 	doc_process.doc_process( root )
 	if _dump_doc:
-		dump_document( doc )
-	
+		print( dump_document( doc ) )
+
+	if _write_doc:
+		with open( _write_doc, 'w', encoding = 'utf-8' ) as out:
+			out.write( dump_document( doc ) )
+		
 	return doc
 	
