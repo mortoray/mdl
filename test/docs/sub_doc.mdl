@@ -1,0 +1,13 @@
++++
+title: A Document with a sub-document.
+desc: A desc
++++
+
+Some text.
+
++++
+document: related
+title: sub-document
++++
+
+Related stuff.

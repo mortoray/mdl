@@ -1,4 +1,5 @@
 from . import tree_parser, parse_to_doc, doc_process, doc_tree, doc_tree_dump, structure
+import pprint
 
 class Document:
 	def __init__(self ):
@@ -10,7 +11,10 @@ class Document:
 		
 	def set_meta( self, meta : structure.ObjectType ) -> None:
 		self.meta = meta
-		
+
+def dump_document( doc : Document ) -> None:
+	print( structure.dump_structure( doc.meta ) )
+	doc_tree_dump.dump( doc.root )
 		
 def load_document( path : str, *, 
 	_dump_parse = False,
@@ -40,10 +44,11 @@ def load_document( path : str, *,
 	if _dump_pre_doc:
 		doc_tree_dump.dump( root )
 		
+	doc.set_root( root )
+	
 	doc_process.doc_process( root )
 	if _dump_doc:
-		doc_tree_dump.dump( root )
+		dump_document( doc )
 	
-	doc.set_root( root )
 	return doc
 	

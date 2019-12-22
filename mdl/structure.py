@@ -43,3 +43,30 @@ def _parse_object( src : Source, indent : str ) -> ObjectType:
 		src.skip_empty_lines()
 		
 	return ret
+
+def dump_structure( obj : EntryType, indent : str = '', *, _is_initial = True ) -> str:
+	text = ''
+	if isinstance( obj, dict ):
+		if not _is_initial:
+			text += '\n' 
+			indent += '\t'
+			
+		for key, value in obj.items():
+			text += f'{indent}{key}: '
+			text += dump_structure( value )
+			text += '\n'
+			
+	elif isinstance( obj, list ):
+		text += '[\n'
+		for et in obj:
+			text += dump_structure( et, indent  + '\t' )
+			text += ',\n' 
+		text += '{indent}]' 
+		
+	elif isinstance( obj, str ):
+		text += f'"{obj}"' #TODO: escape
+		
+	else:
+		raise Exception( "Invalid structure type", obj )
+		
+	return text
