@@ -190,6 +190,7 @@ _syntax_matter = re.compile( r'(^\+\+\+)', re.MULTILINE )
 _syntax_matter_end = re.compile( r'(^\+\+\+$)', re.MULTILINE )
 _syntax_annotation = re.compile( r'@(\p{L}+)' )
 _syntax_rest_line = re.compile( r'(.*)$', re.MULTILINE )
+_syntax_inline_header = re.compile( r'::' )
 
 # A feature may have any regex opening match, but requires a single character terminal
 class FeatureParse(object):
@@ -209,7 +210,7 @@ class FeatureParse(object):
 		fp.is_raw = True
 		return fp
 	
-_syntax_feature = re.compile(r'([\*_\[\(`\:])')
+_syntax_feature = re.compile(r'([\*_\[\(`])')
 _syntax_feature_map = {
 	'*': FeatureParse.open_close('*','*'),
 	'_': FeatureParse.open_close('_','_'),
@@ -374,13 +375,13 @@ def _parse_line( src : Source, terminal : Optional[str] = None ) -> Sequence[Nod
 	def mark_header():
 		nonlocal bits
 		at = 0
-		while len(bits) > 0 and bits[at].class_ == ':':
+		while len(bits) > 0 and bits[at].class_ == '::':
 			at += 1
 			
 		collect = bits[at:]
 		bits = bits[:at]
 		header = Node(NodeType.inline)
-		header.class_ = ':'
+		header.class_ = '::'
 		header.add_subs( collect )
 		push_bit( header )
 		
@@ -401,7 +402,7 @@ def _parse_line( src : Source, terminal : Optional[str] = None ) -> Sequence[Nod
 			continue
 			
 		note_match = src.match( _syntax_inline_note )
-		if note_match != None:
+		if note_match is not None:
 			note_name = note_match.group(1)
 			end_text()
 			note = Node( NodeType.inline )
@@ -410,14 +411,16 @@ def _parse_line( src : Source, terminal : Optional[str] = None ) -> Sequence[Nod
 			push_bit( note )
 			continue
 			
+		header_match = src.match( _syntax_inline_header )
+		if header_match is not None:
+			end_text()
+			mark_header()
+			continue
+			
 		feature_match = src.match( _syntax_feature )
-		if feature_match != None:
+		if feature_match is not None:
 			feature_class = feature_match.group(1)
 			end_text()
-			
-			if feature_class == ':':
-				mark_header()
-				continue
 			
 			feature_parse = _syntax_feature_map[feature_class]
 			
@@ -433,7 +436,7 @@ def _parse_line( src : Source, terminal : Optional[str] = None ) -> Sequence[Nod
 			continue
 			
 			
-		text += src.next_char()
+		text += _parse_char( src )
 			
 	if terminal is not None and not has_end_char:
 		raise Exception( "unterminated-line-feature", end_char )
@@ -447,17 +450,41 @@ def _parse_raw_escape_to( src, close_char ):
 	text = ''
 	
 	while not src.is_at_end():
-		c = src.next_char()
+		c = src.peek_char()
 		if c == '\\':
+			_ = src.next_char()
 			c = src.next_char()
 		elif c == close_char:
+			_ = src.next_char()
 			return text
-		
+		else:
+			c = _parse_char( src )
+			
 		text += c
 		
 	raise Exception( f"{src.map_position(start)} Unclosed raw text feature {close_char}" )
 
-	
+
+_text_replace_map = {
+	'--': '—',
+	'...': '…',
+	# a test to ensure this plugin support would work
+	':)': '☺',
+}
+
+_trp_regex = None
+def _get_trp_regex():
+	global _trp_regex
+	if _trp_regex is None:
+		res = "|".join([ re.escape(k) for k in _text_replace_map.keys() ])
+		_trp_regex = re.compile( res )
+	return _trp_regex
+
+def _parse_char( src : Source ) -> str:
+	m = src.match( _get_trp_regex() )
+	if m is not None:
+		return _text_replace_map[m.group(0)]
+	return src.next_char()
 	
 def _parse_para( src, indent ):
 	para = Node(NodeType.block)

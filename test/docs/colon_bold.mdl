@@ -1,6 +1,6 @@
 A list with bold bits.
 
-- One: Value
-- Two and three: More values
+- One:: Value
+- Two and three :: More values
 
-In a plain paragraph: the colon doesn't change anything.
+In a plain paragraph :: the double-colon also becomes a header. For consistency it doesn't change meaning.
