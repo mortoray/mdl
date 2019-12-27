@@ -120,6 +120,7 @@ class HtmlWriter:
 			class_ = 'promote'
 			
 		self.output.write( "<{} class='{}'>".format(tag, class_) )
+		#TODO: self._write_flow( node.iter_sub() )  # Which makes sense, this is compacter, but often less correct?
 		self._write_sub( node )
 		self.output.write( "</{}>".format(tag) )
 	

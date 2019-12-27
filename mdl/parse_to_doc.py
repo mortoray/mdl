@@ -92,7 +92,8 @@ def _convert_blocks( ctx, nodes_iter ):
 			append_block( para )
 				
 		elif node.type == tree_parser.NodeType.container:
-			para = _convert_block( ctx, nodes_iter, prev_in_section )
+			node = nodes_iter.next()
+			para = _convert_block( ctx, _NodeIterator([ node ]), None )
 			append_block( para )
 			
 		elif node.type == tree_parser.NodeType.matter:
@@ -159,8 +160,7 @@ def _convert_block( ctx, nodes_iter, prev_in_section ):
 		if node.class_.startswith( '#' ):
 			para = doc_tree.Section( len(node.class_), para_subs  )
 		elif node.class_.startswith( '>' ):
-			para = doc_tree.Block( doc_tree.block_quote )
-			para.sub = para_subs
+			para = doc_tree.Block( doc_tree.block_quote, para_subs )
 		elif node.class_.startswith( '-' ):
 			if isinstance( prev_in_section, doc_tree.List ):
 				para_list = prev_in_section

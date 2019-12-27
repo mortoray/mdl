@@ -1,0 +1,10 @@
+container 
+	container/> 
+		block 
+			text A continuation is a block that extends the previous block, assuming it's a container of some kind.
+		block 
+			text This block is a continuation of the one before it.
+		block 
+			text This is in a blockquote, so should be part of that blockquote.
+	block 
+		text This is a block one-level up.

@@ -1,0 +1,11 @@
+<Section:0>
+	<Block:quote>
+		<Paragraph>
+			A continuation is a block that extends the previous block, assuming it's a container of some kind.
+		<Paragraph>
+			This block is a continuation of the one before it.
+		<Paragraph>
+			This is in a blockquote, so should be part of that blockquote.
+
+	<Paragraph>
+		This is a block one-level up.

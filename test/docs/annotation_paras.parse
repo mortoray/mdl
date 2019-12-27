@@ -1,0 +1,12 @@
+container 
+	block 
+		text A normal paragraph.
+	block 
+		@Aside
+		text An aside paragraph.
+	block 
+		@Promote
+		text A promotion block.
+	block 
+		@Blurb
+		text Self-promotion blurb.
