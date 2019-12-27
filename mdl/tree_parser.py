@@ -17,21 +17,7 @@ _syntax_matter_end = re.compile( r'(^\+\+\+$)', re.MULTILINE )
 _syntax_annotation = re.compile( r'@(\p{L}+)' )
 _syntax_rest_line = re.compile( r'(.*)$', re.MULTILINE )
 _syntax_inline_header = re.compile( r'::' )
-
-_text_replace_map = {
-	'--': '—',
-	'...': '…',
-	# a test to ensure this plugin support would work
-	':)': '☺',
-}
-
-_trp_regex = None
-def _get_trp_regex():
-	global _trp_regex
-	if _trp_regex is None:
-		res = "|".join([ re.escape(k) for k in _text_replace_map.keys() ])
-		_trp_regex = re.compile( res )
-	return _trp_regex
+_syntax_inline_note = re.compile( r'\^([\p{L}\p{N}]*)' )
 
 # A feature may have any regex opening match, but requires a single character terminal
 class FeatureParse():
@@ -55,16 +41,36 @@ class FeatureParse():
 		fp.is_raw = True
 		return fp
 	
-_syntax_inline_note = re.compile( r'\^([\p{L}\p{N}]*)' )
 
 
 class TreeParser:
 	def __init__(self):
 		self._syntax_feature_map : Dict[str,FeatureParse] = {}
 		self._syntax_feature : Optional[re.Pattern] = None
+
+		self._text_replace_map : Dict[str,str] = {}
+		self.add_text_replace( {
+			'--': '—',
+			'...': '…',
+			# a test to ensure this plugin support would work
+			':)': '☺',
+		})
 		
 		self._init_features()
 
+	def add_text_replace( self, reps : Dict[str,str] ) -> None:
+		for src, dst in reps.items():
+			assert src not in self._text_replace_map
+			self._text_replace_map[src] = dst
+			
+		self._trp_regex = None
+		
+	def _get_trp_regex(self) -> re.Pattern:
+		if self._trp_regex is None:
+			res = "|".join([ re.escape(k) for k in self._text_replace_map.keys() ])
+			self._trp_regex = re.compile( res )
+		return self._trp_regex
+		
 	def _init_features(self) -> None:
 		self._syntax_feature_map = {
 			'*': FeatureParse.open_close('*','*'),
@@ -342,9 +348,9 @@ class TreeParser:
 		Parse the next textual character. This should be used in any place text is being constructed.
 	"""
 	def _parse_char( self, src : Source ) -> str:
-		m = src.match( _get_trp_regex() )
+		m = src.match( self._get_trp_regex() )
 		if m is not None:
-			return _text_replace_map[m.group(0)]
+			return self._text_replace_map[m.group(0)]
 		return src.next_char()
 		
 	def _parse_para( self, src, indent ):
