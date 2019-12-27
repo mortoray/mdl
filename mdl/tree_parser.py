@@ -3,182 +3,26 @@ from __future__ import annotations # type: ignore
 import regex as re # type: ignore
 from typing import *
 
-from enum import Enum
 from .source import Source
+from .parse_tree import *
 
-class NodeType(Enum):
-	# may contain blocks and containers as children
-	container = 1
-	# may contain text and inline as children
-	block = 2
-	# text nodes may not have children
-	text = 3
-	# may contain text and inline as children
-	inline = 4
-	# may not contain children, text is the raw text
-	raw = 5
-	# may not contain children, data is the structured data
-	matter = 6
-	
-class Annotation(object):
-	def __init__(self, class_, node = None):
-		self._class_ = class_
-		self._node = node
-		
-	@property
-	def class_( self ):
-		return self._class_
-		
-	@property
-	def node( self ):
-		return self._node
-		
-class Node(object):
-	def __init__(self, type):
-		self._sub = []
-		self._text = ''
-		self._type = type
-		self._class_ = ''
-		self._attr = None
-		self._annotations = None
-		self._args = []
-		self._data = None
-		
-	def __str__( self ):
-		return "{}@{} \"{}\"".format( self._type, self._class_, self._text )
-		
-	def validate_sub( self, sub ):
-		if self._type == NodeType.text:
-			raise Exception( "The text type should not have children" )
-		if self._type == NodeType.container and not sub._type in [NodeType.block, NodeType.raw, NodeType.container, NodeType.matter]:
-			raise Exception( "containers can only contain blocks/raw" )
-		if self._type in [NodeType.block, NodeType.inline] and not sub._type in [NodeType.inline, NodeType.text]:
-			raise Exception( "blocks/inlines can only contain inline/text" )
-			
-		assert isinstance(sub, Node)
-		
-	def add_annotations( self, annotations ):
-		if len(annotations) == 0:
-			return
-		if self._annotations == None:
-			self._annotations = []
-		self._annotations += annotations[:]
-		
-	def get_annotation( self, class_ ):
-		if self._annotations == None:
-			return None
-		for anno in self._annotations:	
-			if anno.class_ == class_:
-				return anno
-		return None
-		
-	def add_arg( self, arg : str):
-		self._args.append( arg )
-		
-	def get_args( self ) -> List[str]:
-		return self._args[:]
-		
-	def has_args( self ) -> bool:
-		return len(self._args) > 0
-		
-	def promote_to_container( self ) -> None:
-		first_child = Node( self._type )
-		first_child._text = self._text
-		self._text = ''
+class TreeParser:
+	def __init__(self):
+		pass
 
-		first_child._sub = self._sub
-		self._sub = [first_child]
-		
-		self._type = NodeType.container
-		
-	def remove_sub_at( self, index : int ) -> None:
-		del self._sub[index]
-		
 	"""
-		Splits this container node at the index, keeping children before the index in this container and those after in the returned container.
+		Parses a file
+		@param filename The name of the file to parse
+		@return A node representing the document
 	"""
-	def split_at( self, index : int ) -> Node:
-		container = Node( self._type )
-		container._sub = self._sub[index:]
-		self._sub = self._sub[:index]
-		return container
-		
-	def add_subs( self, subs : Sequence[Node] ) -> None:
-		for sub in subs:
-			self.add_sub( sub )
-			
-	def add_sub( self, sub : Node ) -> None:
-		self.validate_sub( sub )
-		self._sub.append( sub )
-			
-	# As Python lacks a random access iterator, this returns a list view of the subs, it should not be modified
-	def iter_sub( self ):
-		return self._sub
-		
-	def sub_is_empty( self ):
-		return len(self._sub) == 0
-		
-	def sub_last( self ):
-		if len(self._sub) > 0:
-			return self._sub[-1]
-		return None
-		
-	@property
-	def text(self):
-		return self._text
-		
-	@text.setter
-	def text( self, text ):
-		assert isinstance(text, str)
-		self._text = text
-		
-	@property
-	def type( self ):
-		return self._type
-
-	@property
-	def class_( self ):
-		return self._class_
-		
-	@class_.setter
-	def class_( self, value ):
-		self._class_ = value
-		
-	def add_attr( self, node ):
-		if self._attr == None:
-			self._attr = []
-		self._attr.append(node)
-		
-	def has_attr( self ):
-		return self._attr != None and len(self._attr) > 0
-		
-	def iter_attr( self ):
-		return iter(self._attr)
-		
-	def get_attrs(self):
-		if self._attr == None:
-			return []
-		return self._attr
-		
-	def has_annotations( self ):
-		return self._annotations != None and len(self._annotations) > 0
-		
-	def iter_annotations( self ):
-		return iter( self._annotations )
-
-		
-# Parses a file
-# @param filename The name of the file to parse
-# @return A node representing the document
-def parse_file( filename : str ) -> Node:
-	in_file = open( filename, 'r', encoding = 'utf-8' )
-	in_text = in_file.read()
-	in_source = Source(in_text)
+	def parse_file( self, filename : str ) -> Node:
+		in_file = open( filename, 'r', encoding = 'utf-8' )
+		in_text = in_file.read()
+		in_source = Source(in_text)
 	
-	root = Node(NodeType.container)
-	_parse_container( root, in_source, '' )
-	return root
-
+		root = Node(NodeType.container)
+		_parse_container( root, in_source, '' )
+		return root
 	
 _syntax_empty_line = re.compile( r'[\p{Space_Separator}\t]*$', re.MULTILINE )
 _syntax_line = re.compile( r'(?!//)(#+|-|/)' )
@@ -514,56 +358,4 @@ def _parse_para( src, indent ):
 		
 	return para
 	
-"""
-	Debugging and test compliance utitlity.
-"""
-class _dumper:
-	def __init__(self, ansi = False):
-		self.ansi = ansi
-		
-	def get( self, node : Node, indent : str = '' ) -> str:
-		text = indent
-		header = node.type.name
-		if len(node.class_) > 0:
-			header += '/' + node.class_
-		text += self._bold(header)
-		text += ' ' + node.text
-		if node.has_args():
-			text += "["
-			text += ",".join( node.get_args() )
-			text += "]"
-		
-		if node.has_annotations():
-			for anno in node.iter_annotations():
-				text += '\n{}\t@{}'.format( indent, self._alt(anno.class_) )
-				if anno.node != None:
-					text += '\n' + self.get( anno.node, indent + '\t\t' )
-		if node.has_attr():
-			text += '\n' + indent + '\tattrs\n'
-			for attr in node.iter_attr():
-				text += self.get( attr, indent + '\t\t' )
-		else:
-			text += '\n'
-					
-		indent += "\t"
-		for sub in node.iter_sub():
-			text += self.get( sub, indent )
-
-		return text
-
-	def _bold(self, text : str) -> str:
-		if not self.ansi:
-			return text
-		return '\x1b[1m{}\x1b[m'.format(text)
-
-	def _alt(self, text : str) -> str:
-		if not self.ansi:
-			return text
-		return '\x1b[96m{}\x1b[m'.format(text)
-		
-		
-def dump( node : Node ) -> None:
-	print( _dumper( ansi = True ).get( node ) )
-	
-def get_dump( node : Node ) -> str:
-	return _dumper().get( node )
+__all__ = [ 'TreeParser' ]

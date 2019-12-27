@@ -2,7 +2,7 @@
 	Test driver for document tests.
 """
 import os, yaml
-from mdl import tree_parser, parse_to_doc, format_html, doc_process, document
+from mdl import tree_parser, parse_to_doc, format_html, doc_process, document, parse_tree_dump
 import mdl
 from shelljob import fs #type: ignore
 
@@ -19,10 +19,12 @@ for fname in fs.find( 'test/docs', name_regex = r".*\.mdl" ):
 	print( fname, end= ' ' )
 	base = os.path.splitext( fname )[0]
 	
+	tp = tree_parser.TreeParser()
+	
 	parse_name = base + '.parse'
 	if os.path.exists( parse_name ):
-		parsed = tree_parser.parse_file( fname )
-		parse_dump = tree_parser.get_dump( parsed )
+		parsed = tp.parse_file( fname )
+		parse_dump = parse_tree_dump.get_dump( parsed )
 		with open( parse_name, 'r', encoding = 'utf-8' ) as check:
 			check_dump = check.read()
 		
@@ -43,7 +45,7 @@ for fname in fs.find( 'test/docs', name_regex = r".*\.mdl" ):
 		test = yaml.safe_load( open( yaml_name ).read() )
 		if 'fail-parse' in test:
 			try:
-				_ = tree_parser.parse_file( fname )
+				_ = tp.parse_file( fname )
 				okay = False
 			except Exception as e:
 				okay = True

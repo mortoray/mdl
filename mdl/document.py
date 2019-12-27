@@ -1,4 +1,4 @@
-from . import tree_parser, parse_to_doc, doc_process, doc_tree, doc_tree_dump, structure
+from . import tree_parser, parse_to_doc, doc_process, doc_tree, doc_tree_dump, structure, parse_tree_dump
 from typing import *
 
 class Document:
@@ -40,12 +40,14 @@ def load_document( path : str, *,
 	_dump_pre_doc = False,
 	_dump_doc = False
 	) -> Document:
-	node = tree_parser.parse_file( path )
+	
+	tp = tree_parser.TreeParser()
+	node = tp.parse_file( path )
 	if _dump_parse:
-		tree_parser.dump( node )
+		parse_tree_dump.dump( node )
 	if _write_parse:
 		with open( _write_parse, 'w', encoding = 'utf-8' ) as out:
-			out.write( tree_parser.get_dump( node ) )
+			out.write( parse_tree_dump.get_dump( node ) )
 	
 	assert node.type == tree_parser.NodeType.container
 	assert not node.sub_is_empty()
