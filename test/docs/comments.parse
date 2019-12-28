@@ -10,6 +10,6 @@ container
 	block/> 
 		@comment
 			block 
-				text Whereas a multi-line comment spans lines as a block. But still annotates the next block
+				text  Whereas a multi-line comment spans lines as a block. But still annotates the next block
 
 		text Which can be any type of block.

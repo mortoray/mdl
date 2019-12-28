@@ -8,23 +8,21 @@ from .source import Source
 from .parse_tree import *
 
 _syntax_empty_line = re.compile( r'[\p{Space_Separator}\t]*$', re.MULTILINE )
-_syntax_line = re.compile( r'(#+|-)' )
-_syntax_block = re.compile( r'(>|>>|//|\^([\p{L}\p{N}]*))\s*' )
 _syntax_raw = re.compile( r'(```)' )
 _syntax_raw_end = re.compile( r'(^```)', re.MULTILINE )
 _syntax_matter = re.compile( r'(^\+\+\+)', re.MULTILINE ) 
 _syntax_matter_end = re.compile( r'(^\+\+\+$)', re.MULTILINE )
-_syntax_annotation = re.compile( r'@(\p{L}+)' )
 _syntax_rest_line = re.compile( r'(.*)$', re.MULTILINE )
 _syntax_inline_header = re.compile( r'::' )
 _syntax_inline_note = re.compile( r'\^([\p{L}\p{N}]*)' )
 
 class BlockLevelBuilder:
-	def __init__(self, source : Source, parser : TreeParser):
+	def __init__(self, source : Source, parser : TreeParser, indent : str):
 		self._annotations : List[Annotation] = []
 		self._blocks : List[Node] = []
 		self.source = source
 		self._parser = parser
+		self._indent = indent
 		
 	def append_annotation( self, anno : Annotation ) -> None:
 		self._annotations.append( anno )
@@ -36,6 +34,9 @@ class BlockLevelBuilder:
 		
 	def parse_line( self, terminal : Optional[str] = None) -> Sequence[Node]:
 		return self._parser._parse_line( self.source, terminal )
+		
+	def parse_para( self ) -> Node:
+		return self._parser._parse_para( self.source, self._indent )
 	
 class BlockLevelMatcher(Protocol):
 	@abstractmethod
@@ -70,16 +71,18 @@ class FeatureParse():
 	
 
 class BLMAnnotation(BlockLevelMatcher):
+	pattern = re.compile( r'@(\p{L}+)' )
 	def get_match_regex( self ) -> re.Pattern:
-		return _syntax_annotation
+		return self.pattern
 		
 	def process( self, builder : BlockLevelBuilder, match : re.Match ):
 		builder.append_annotation( Annotation( match.group(1) ) )
 		
 
 class BLMLine(BlockLevelMatcher):
+	pattern = re.compile( r'(#+|-)' )
 	def get_match_regex( self ) -> re.Pattern:
-		return _syntax_line
+		return self.pattern
 		
 	def process( self, builder : BlockLevelBuilder, match : re.Match ):
 		class_ = match.group(1)
@@ -89,15 +92,20 @@ class BLMLine(BlockLevelMatcher):
 		builder.append_block( line )
 
 		
-class BLMLineComment(BlockLevelMatcher):
-	pattern = re.compile( r'(?!//)(/)' )
+class BLMComment(BlockLevelMatcher):
+	# // must be first, as it appears to be doing non-greedy matching
+	pattern = re.compile( r'(//|/)' )
 	def get_match_regex( self ) -> re.Pattern:
 		return self.pattern
 		
 	def process( self, builder : BlockLevelBuilder, match : re.Match ):
-		line = Node(NodeType.block)
-		line.add_subs( builder.parse_line() )
-		builder.append_annotation( Annotation( 'comment', line) )
+		if match.group(1) == '//':
+			para = builder.parse_para()
+			builder.append_annotation( Annotation( 'comment', para ) )
+		else:
+			line = Node(NodeType.block)
+			line.add_subs( builder.parse_line() )
+			builder.append_annotation( Annotation( 'comment', line) )
 		
 
 class BLMTag(BlockLevelMatcher):
@@ -116,8 +124,26 @@ class BLMTag(BlockLevelMatcher):
 				para.add_arg( arg )
 			
 		builder.append_block( para )
+
+		
+class BLMBlock(BlockLevelMatcher):
+	pattern = re.compile( r'(>|>>|\^([\p{L}\p{N}]*))\s*' )
+	def get_match_regex( self ) -> re.Pattern:
+		return self.pattern
+		
+	def process( self, builder : BlockLevelBuilder, match : re.Match ):
+		class_ = match.group(1)
+		para = builder.parse_para()
+		para.class_ = match.group(1)
+			
+		# TODO: howto match two groups with a dpeendent group to avoid this?
+		if class_[0:1] == '^':
+			para.class_ = '^'
+			para.text = match.group(2)
+		builder.append_block( para )
 	
 
+	
 class TreeParser:
 	def __init__(self):
 		self._syntax_feature_map : Dict[str,FeatureParse] = {}
@@ -134,8 +160,9 @@ class TreeParser:
 		self._block_level_matchers = [
 			BLMAnnotation(),
 			BLMLine(),
-			BLMLineComment(),
+			BLMComment(),
 			BLMTag(),
+			BLMBlock(),
 		]
 		
 		self._init_features()
@@ -181,7 +208,7 @@ class TreeParser:
 	
 
 	def _parse_container( self, root, src, indent ):
-		builder = BlockLevelBuilder( src, self )
+		builder = BlockLevelBuilder( src, self, indent )
 			
 		while not src.is_at_end():
 			if src.match( _syntax_empty_line ) != None:
@@ -210,22 +237,6 @@ class TreeParser:
 					matched = True
 					break
 			if matched:
-				continue
-				
-			block = src.match( _syntax_block )
-			if block != None:
-				class_ = block.group(1)
-				para = self._parse_para(src, indent)
-				if class_ == '//':
-					builder.append_annotation( Annotation( 'comment', para ) )
-				else:
-					para.class_ = block.group(1)
-					
-					# TODO: howto match two groups with a dpeendent group to avoid this?
-					if class_[0:1] == '^':
-						para.class_ = '^'
-						para.text = block.group(2)
-					builder.append_block( para )
 				continue
 				
 			raw_match = src.match( _syntax_raw )
