@@ -10,7 +10,6 @@ from .parse_tree import *
 _syntax_empty_line = re.compile( r'[\p{Space_Separator}\t]*$', re.MULTILINE )
 _syntax_line = re.compile( r'(#+|-)' )
 _syntax_block = re.compile( r'(>|>>|//|\^([\p{L}\p{N}]*))\s*' )
-_syntax_tag = re.compile( r'{%\s+(\p{L}+)\s' )
 _syntax_raw = re.compile( r'(```)' )
 _syntax_raw_end = re.compile( r'(^```)', re.MULTILINE )
 _syntax_matter = re.compile( r'(^\+\+\+)', re.MULTILINE ) 
@@ -101,6 +100,24 @@ class BLMLineComment(BlockLevelMatcher):
 		builder.append_annotation( Annotation( 'comment', line) )
 		
 
+class BLMTag(BlockLevelMatcher):
+	pattern = re.compile( r'{%\s+(\p{L}+)\s' )
+	def get_match_regex( self ) -> re.Pattern:
+		return self.pattern
+		
+	def process( self, builder : BlockLevelBuilder, match : re.Match ):
+		para = Node(NodeType.block)
+		para.class_ = match.group(1)
+		while True:
+			arg, end = builder.source.parse_string( '}' )
+			if end: 
+				break
+			if arg is not None:
+				para.add_arg( arg )
+			
+		builder.append_block( para )
+	
+
 class TreeParser:
 	def __init__(self):
 		self._syntax_feature_map : Dict[str,FeatureParse] = {}
@@ -118,6 +135,7 @@ class TreeParser:
 			BLMAnnotation(),
 			BLMLine(),
 			BLMLineComment(),
+			BLMTag(),
 		]
 		
 		self._init_features()
@@ -193,21 +211,6 @@ class TreeParser:
 					break
 			if matched:
 				continue
-				
-			tag = src.match( _syntax_tag )
-			if tag != None:
-				para = Node(NodeType.block)
-				para.class_ = tag.group(1)
-				while True:
-					arg, end = src.parse_string( '}' )
-					if end: 
-						break
-					if arg is not None:
-						para.add_arg( arg )
-					
-				builder.append_block( para )
-				continue
-				
 				
 			block = src.match( _syntax_block )
 			if block != None:
