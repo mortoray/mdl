@@ -8,7 +8,7 @@ from .source import Source
 from .parse_tree import *
 
 _syntax_empty_line = re.compile( r'[\p{Space_Separator}\t]*$', re.MULTILINE )
-_syntax_line = re.compile( r'(?!//)(#+|-|/)' )
+_syntax_line = re.compile( r'(#+|-)' )
 _syntax_block = re.compile( r'(>|>>|//|\^([\p{L}\p{N}]*))\s*' )
 _syntax_tag = re.compile( r'{%\s+(\p{L}+)\s' )
 _syntax_raw = re.compile( r'(```)' )
@@ -77,7 +77,6 @@ class BLMAnnotation(BlockLevelMatcher):
 	def process( self, builder : BlockLevelBuilder, match : re.Match ):
 		builder.append_annotation( Annotation( match.group(1) ) )
 		
-_blm_annotation = BLMAnnotation()
 
 class BLMLine(BlockLevelMatcher):
 	def get_match_regex( self ) -> re.Pattern:
@@ -88,14 +87,18 @@ class BLMLine(BlockLevelMatcher):
 		line = Node(NodeType.block)
 		line.class_ = class_
 		line.add_subs( builder.parse_line() )
+		builder.append_block( line )
+
 		
-		if class_ == '/':
-			line.class_ = ''
-			builder.append_annotation( Annotation( 'comment', line) )
-		else:
-			builder.append_block( line )
-			
-_blm_line = BLMLine()
+class BLMLineComment(BlockLevelMatcher):
+	pattern = re.compile( r'(?!//)(/)' )
+	def get_match_regex( self ) -> re.Pattern:
+		return self.pattern
+		
+	def process( self, builder : BlockLevelBuilder, match : re.Match ):
+		line = Node(NodeType.block)
+		line.add_subs( builder.parse_line() )
+		builder.append_annotation( Annotation( 'comment', line) )
 		
 
 class TreeParser:
@@ -110,6 +113,12 @@ class TreeParser:
 			# a test to ensure this plugin support would work
 			':)': '☺',
 		})
+		
+		self._block_level_matchers = [
+			BLMAnnotation(),
+			BLMLine(),
+			BLMLineComment(),
+		]
 		
 		self._init_features()
 
@@ -175,14 +184,14 @@ class TreeParser:
 					
 				continue
 			
-			annotation_match = src.match( _blm_annotation.get_match_regex() )
-			if annotation_match != None:
-				_blm_annotation.process( builder, annotation_match )
-				continue
-				
-			line_match = src.match( _blm_line.get_match_regex() )
-			if line_match != None:
-				_blm_line.process( builder, line_match )
+			matched = False
+			for blm in self._block_level_matchers:
+				match = src.match( blm.get_match_regex() )
+				if match != None:
+					blm.process( builder, match )
+					matched = True
+					break
+			if matched:
 				continue
 				
 			tag = src.match( _syntax_tag )
