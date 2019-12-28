@@ -21,9 +21,11 @@ _syntax_inline_header = re.compile( r'::' )
 _syntax_inline_note = re.compile( r'\^([\p{L}\p{N}]*)' )
 
 class BlockLevelBuilder:
-	def __init__(self):
+	def __init__(self, source : Source, parser : TreeParser):
 		self._annotations : List[Annotation] = []
-		self._blocks = []
+		self._blocks : List[Node] = []
+		self.source = source
+		self._parser = parser
 		
 	def append_annotation( self, anno : Annotation ) -> None:
 		self._annotations.append( anno )
@@ -33,6 +35,8 @@ class BlockLevelBuilder:
 		self._annotations = []
 		self._blocks.append( block )
 		
+	def parse_line( self, terminal : Optional[str] = None) -> Sequence[Node]:
+		return self._parser._parse_line( self.source, terminal )
 	
 class BlockLevelMatcher(Protocol):
 	@abstractmethod
@@ -72,10 +76,27 @@ class BLMAnnotation(BlockLevelMatcher):
 		
 	def process( self, builder : BlockLevelBuilder, match : re.Match ):
 		builder.append_annotation( Annotation( match.group(1) ) )
-
 		
 _blm_annotation = BLMAnnotation()
 
+class BLMLine(BlockLevelMatcher):
+	def get_match_regex( self ) -> re.Pattern:
+		return _syntax_line
+		
+	def process( self, builder : BlockLevelBuilder, match : re.Match ):
+		class_ = match.group(1)
+		line = Node(NodeType.block)
+		line.class_ = class_
+		line.add_subs( builder.parse_line() )
+		
+		if class_ == '/':
+			line.class_ = ''
+			builder.append_annotation( Annotation( 'comment', line) )
+		else:
+			builder.append_block( line )
+			
+_blm_line = BLMLine()
+		
 
 class TreeParser:
 	def __init__(self):
@@ -133,7 +154,7 @@ class TreeParser:
 	
 
 	def _parse_container( self, root, src, indent ):
-		builder = BlockLevelBuilder()
+		builder = BlockLevelBuilder( src, self )
 			
 		while not src.is_at_end():
 			if src.match( _syntax_empty_line ) != None:
@@ -159,18 +180,9 @@ class TreeParser:
 				_blm_annotation.process( builder, annotation_match )
 				continue
 				
-			line_match = src.match( _syntax_line )
+			line_match = src.match( _blm_line.get_match_regex() )
 			if line_match != None:
-				class_ = line_match.group(1)
-				line = Node(NodeType.block)
-				line.class_ = class_
-				line.add_subs( self._parse_line(src) )
-				
-				if class_ == '/':
-					line.class_ = ''
-					builder.append_annotation( Annotation( 'comment', line) )
-				else:
-					builder.append_block( line )
+				_blm_line.process( builder, line_match )
 				continue
 				
 			tag = src.match( _syntax_tag )
@@ -380,7 +392,7 @@ class TreeParser:
 			return self._text_replace_map[m.group(0)]
 		return src.next_char()
 		
-	def _parse_para( self, src, indent ):
+	def _parse_para( self, src : Source, indent : str ) -> Node:
 		para = Node(NodeType.block)
 		first = True
 		while not src.is_at_end():
