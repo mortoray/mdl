@@ -3,11 +3,11 @@ container
 		text A list with bold bits.
 	block/- 
 		inline/:: 
-			text  One
+			text One
 		text  Value
 	block/- 
 		inline/:: 
-			text  Two and three 
+			text Two and three 
 		text  More values
 	block 
 		inline/:: 

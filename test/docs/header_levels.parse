@@ -1,21 +1,21 @@
 container 
 	block/# 
-		text  Level 1
+		text Level 1
 	block 
 		text One
 	block/## 
-		text  Level 2
+		text Level 2
 	block 
 		text Two
 	block/### 
-		text  Level 3
+		text Level 3
 	block 
 		text Three
 	block/## 
-		text  Level 2-B
+		text Level 2-B
 	block 
 		text Four
 	block/# 
-		text  Level 1-B
+		text Level 1-B
 	block 
 		text Five

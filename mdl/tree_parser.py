@@ -80,7 +80,7 @@ class BLMAnnotation(BlockLevelMatcher):
 		
 
 class BLMLine(BlockLevelMatcher):
-	pattern = re.compile( r'(#+|-)' )
+	pattern = re.compile( r'(#+|-)\s*' )
 	def get_match_regex( self ) -> re.Pattern:
 		return self.pattern
 		
@@ -94,7 +94,7 @@ class BLMLine(BlockLevelMatcher):
 		
 class BLMComment(BlockLevelMatcher):
 	# // must be first, as it appears to be doing non-greedy matching
-	pattern = re.compile( r'(//|/)' )
+	pattern = re.compile( r'(//|/)\s*' )
 	def get_match_regex( self ) -> re.Pattern:
 		return self.pattern
 		
