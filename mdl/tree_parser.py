@@ -2,6 +2,7 @@
 from __future__ import annotations # type: ignore
 import regex as re # type: ignore
 from typing import *
+from abc import abstractmethod
 
 from .source import Source
 from .parse_tree import *
@@ -19,6 +20,29 @@ _syntax_rest_line = re.compile( r'(.*)$', re.MULTILINE )
 _syntax_inline_header = re.compile( r'::' )
 _syntax_inline_note = re.compile( r'\^([\p{L}\p{N}]*)' )
 
+class BlockLevelBuilder:
+	def __init__(self):
+		self._annotations : List[Annotation] = []
+		self._blocks = []
+		
+	def append_annotation( self, anno : Annotation ) -> None:
+		self._annotations.append( anno )
+		
+	def append_block( self, block ) -> None:
+		block.add_annotations( self._annotations )
+		self._annotations = []
+		self._blocks.append( block )
+		
+	
+class BlockLevelMatcher(Protocol):
+	@abstractmethod
+	def get_match_regex( self ) -> re.Pattern:
+		raise NotImplementedError()
+		
+	@abstractmethod
+	def process( self, builder : BlockLevelBuilder, match : re.Match ):
+		raise NotImplementedError()
+	
 # A feature may have any regex opening match, but requires a single character terminal
 class FeatureParse():
 	is_raw : bool
@@ -41,6 +65,16 @@ class FeatureParse():
 		fp.is_raw = True
 		return fp
 	
+
+class BLMAnnotation(BlockLevelMatcher):
+	def get_match_regex( self ) -> re.Pattern:
+		return _syntax_annotation
+		
+	def process( self, builder : BlockLevelBuilder, match : re.Match ):
+		builder.append_annotation( Annotation( match.group(1) ) )
+
+		
+_blm_annotation = BLMAnnotation()
 
 
 class TreeParser:
@@ -99,19 +133,11 @@ class TreeParser:
 	
 
 	def _parse_container( self, root, src, indent ):
-		annotations = []
-		blocks = []
-
-		def append_block( block ):
-			nonlocal annotations
-			
-			block.add_annotations( annotations )
-			annotations = []
-			blocks.append( block )
+		builder = BlockLevelBuilder()
 			
 		while not src.is_at_end():
 			if src.match( _syntax_empty_line ) != None:
-				# TODO: it's unclear why this is needed, the regex doesn't consume the line end it appears.
+				# TODO: It'd be preferable if the regex consumed the empty-line entirely
 				src.next_char()
 				continue
 				
@@ -121,16 +147,16 @@ class TreeParser:
 				if len(lead_space) < len(indent):
 					break
 				if len(lead_space) > len(indent):
-					assert len(blocks) > 0
-					child_container = blocks[-1]
+					assert len(builder._blocks) > 0
+					child_container = builder._blocks[-1]
 					child_container.promote_to_container()
 					self._parse_container( child_container, src, lead_space )
 					
 				continue
 			
-			annotation_match = src.match( _syntax_annotation )
+			annotation_match = src.match( _blm_annotation.get_match_regex() )
 			if annotation_match != None:
-				annotations.append( Annotation( annotation_match.group(1) ) )
+				_blm_annotation.process( builder, annotation_match )
 				continue
 				
 			line_match = src.match( _syntax_line )
@@ -141,9 +167,9 @@ class TreeParser:
 				line.add_subs( self._parse_line(src) )
 				
 				if class_ == '/':
-					annotations.append( Annotation( 'comment', line) )
+					builder.append_annotation( Annotation( 'comment', line) )
 				else:
-					append_block( line )
+					builder.append_block( line )
 				continue
 				
 			tag = src.match( _syntax_tag )
@@ -157,7 +183,7 @@ class TreeParser:
 					if arg is not None:
 						para.add_arg( arg )
 					
-				append_block( para )
+				builder.append_block( para )
 				continue
 				
 				
@@ -174,7 +200,7 @@ class TreeParser:
 					if class_[0:1] == '^':
 						para.class_ = '^'
 						para.text = block.group(2)
-					append_block( para )
+					builder.append_block( para )
 				continue
 				
 			raw_match = src.match( _syntax_raw )
@@ -187,7 +213,7 @@ class TreeParser:
 				# Strip first and last newlines as they're part of the syntax
 				raw.text = raw_text[1:-1]
 				raw.class_ = line_match.group(1)
-				append_block( raw )
+				builder.append_block( raw )
 				continue
 				
 			matter_match = src.match( _syntax_matter )
@@ -196,17 +222,17 @@ class TreeParser:
 				end_match, raw_text = src.to_match(_syntax_matter_end)
 				assert end_match != None
 				matter.text = raw_text
-				append_block( matter )
+				builder.append_block( matter )
 				continue
 				
 				
 			para = self._parse_para(src, indent)
 			# drop empty paragraphs
 			if not para.sub_is_empty():
-				append_block( para )
+				builder.append_block( para )
 
 
-		root.add_subs( blocks )
+		root.add_subs( builder._blocks )
 		
 
 	#TODO: unused?
