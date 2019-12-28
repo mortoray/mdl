@@ -127,7 +127,7 @@ class BLMTag(BlockLevelMatcher):
 
 		
 class BLMBlock(BlockLevelMatcher):
-	pattern = re.compile( r'(>|>>|\^([\p{L}\p{N}]*))\s*' )
+	pattern = re.compile( r'(>|>>)\s*' )
 	def get_match_regex( self ) -> re.Pattern:
 		return self.pattern
 		
@@ -135,14 +135,20 @@ class BLMBlock(BlockLevelMatcher):
 		class_ = match.group(1)
 		para = builder.parse_para()
 		para.class_ = match.group(1)
-			
-		# TODO: howto match two groups with a dpeendent group to avoid this?
-		if class_[0:1] == '^':
-			para.class_ = '^'
-			para.text = match.group(2)
 		builder.append_block( para )
 	
 
+class BLMFootnote(BlockLevelMatcher):
+	pattern = re.compile( r'\^([\p{L}\p{N}]*)\s+' )
+	def get_match_regex( self ) -> re.Pattern:
+		return self.pattern
+		
+	def process( self, builder : BlockLevelBuilder, match : re.Match ):
+		para = builder.parse_para()
+		para.class_ = '^'
+		para.text = match.group(1)
+		builder.append_block( para )
+		
 	
 class TreeParser:
 	def __init__(self):
@@ -163,6 +169,7 @@ class TreeParser:
 			BLMComment(),
 			BLMTag(),
 			BLMBlock(),
+			BLMFootnote(),
 		]
 		
 		self._init_features()
