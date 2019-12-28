@@ -8,11 +8,6 @@ from .source import Source
 from .parse_tree import *
 
 _syntax_empty_line = re.compile( r'[\p{Space_Separator}\t]*$', re.MULTILINE )
-_syntax_raw = re.compile( r'(```)' )
-_syntax_raw_end = re.compile( r'(^```)', re.MULTILINE )
-_syntax_matter = re.compile( r'(^\+\+\+)', re.MULTILINE ) 
-_syntax_matter_end = re.compile( r'(^\+\+\+$)', re.MULTILINE )
-_syntax_rest_line = re.compile( r'(.*)$', re.MULTILINE )
 _syntax_inline_header = re.compile( r'::' )
 _syntax_inline_note = re.compile( r'\^([\p{L}\p{N}]*)' )
 
@@ -149,6 +144,39 @@ class BLMFootnote(BlockLevelMatcher):
 		para.text = match.group(1)
 		builder.append_block( para )
 		
+		
+class BLMRaw(BlockLevelMatcher):
+	pattern_open = re.compile( r'(```)' )
+	pattern_close = re.compile( r'(^```)', re.MULTILINE )
+	pattern_rest_line = re.compile( r'(.*)$', re.MULTILINE )
+	def get_match_regex( self ) -> re.Pattern:
+		return self.pattern_open
+		
+	def process( self, builder : BlockLevelBuilder, match : re.Match ):
+		raw = Node(NodeType.raw)
+		line_match = builder.source.match(self.pattern_rest_line)
+		assert line_match != None
+		end_match, raw_text = builder.source.to_match(self.pattern_close)
+		assert end_match != None
+		# Strip first and last newlines as they're part of the syntax
+		raw.text = raw_text[1:-1]
+		raw.class_ = line_match.group(1)
+		builder.append_block( raw )
+		
+
+class BLMMatter(BlockLevelMatcher):
+	pattern_open = re.compile( r'(^\+\+\+)', re.MULTILINE ) 
+	pattern_end = re.compile( r'(^\+\+\+$)', re.MULTILINE )
+	def get_match_regex( self ) -> re.Pattern:
+		return self.pattern_open
+	
+	def process( self, builder : BlockLevelBuilder, match : re.Match ):
+		matter = Node(NodeType.matter)
+		end_match, raw_text = builder.source.to_match(self.pattern_end)
+		assert end_match != None
+		matter.text = raw_text
+		builder.append_block( matter )
+	
 	
 class TreeParser:
 	def __init__(self):
@@ -170,6 +198,8 @@ class TreeParser:
 			BLMTag(),
 			BLMBlock(),
 			BLMFootnote(),
+			BLMRaw(),
+			BLMMatter(),
 		]
 		
 		self._init_features()
@@ -233,46 +263,21 @@ class TreeParser:
 					child_container = builder._blocks[-1]
 					child_container.promote_to_container()
 					self._parse_container( child_container, src, lead_space )
-					
 				continue
-			
-			matched = False
+
+			# Check all feature matches
 			for blm in self._block_level_matchers:
 				match = src.match( blm.get_match_regex() )
 				if match != None:
 					blm.process( builder, match )
-					matched = True
 					break
-			if matched:
-				continue
-				
-			raw_match = src.match( _syntax_raw )
-			if raw_match != None:
-				raw = Node(NodeType.raw)
-				line_match = src.match(_syntax_rest_line)
-				assert line_match != None
-				end_match, raw_text = src.to_match(_syntax_raw_end)
-				assert end_match != None
-				# Strip first and last newlines as they're part of the syntax
-				raw.text = raw_text[1:-1]
-				raw.class_ = line_match.group(1)
-				builder.append_block( raw )
-				continue
-				
-			matter_match = src.match( _syntax_matter )
-			if matter_match != None:
-				matter = Node(NodeType.matter)
-				end_match, raw_text = src.to_match(_syntax_matter_end)
-				assert end_match != None
-				matter.text = raw_text
-				builder.append_block( matter )
-				continue
-				
-				
-			para = self._parse_para(src, indent)
-			# drop empty paragraphs
-			if not para.sub_is_empty():
-				builder.append_block( para )
+			
+			#fallback to a normal paragraph
+			else:
+				para = self._parse_para(src, indent)
+				# drop empty paragraphs
+				if not para.sub_is_empty():
+					builder.append_block( para )
 
 
 		root.add_subs( builder._blocks )
