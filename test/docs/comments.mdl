@@ -1,0 +1,11 @@
+# Comments.
+
+/A one-line comment becomes an annotation to the following block.
+Like this paragraph.
+
+// Whereas a multi-line
+comment spans
+lines as a block.
+But still annotates the next block
+
+> Which can be any type of block.

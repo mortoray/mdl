@@ -167,6 +167,7 @@ class TreeParser:
 				line.add_subs( self._parse_line(src) )
 				
 				if class_ == '/':
+					line.class_ = ''
 					builder.append_annotation( Annotation( 'comment', line) )
 				else:
 					builder.append_block( line )
@@ -192,7 +193,7 @@ class TreeParser:
 				class_ = block.group(1)
 				para = self._parse_para(src, indent)
 				if class_ == '//':
-					annotations.append( Annotation( 'comment', para ) )
+					builder.append_annotation( Annotation( 'comment', para ) )
 				else:
 					para.class_ = block.group(1)
 					
