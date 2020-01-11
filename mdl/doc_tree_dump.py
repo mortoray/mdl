@@ -31,6 +31,8 @@ def get(node, indent = ''):
 		return get_embed(node, indent)
 	if isinstance(node, doc_tree.Code):
 		return get_code(node, indent)
+	if isinstance(node, doc_tree.Token):
+		return get_token(node, indent)
 	
 	raise Exception( "Unsupported type", node )
 
@@ -109,3 +111,7 @@ def get_list_item(node, indent):
 
 def get_embed(node, indent):
 	return '{}<Embed:{}> {}'.format( indent, node.class_.name, node.url )
+
+def get_token(node, indent):
+	return '<Token {}>'.format( " ".join(node.args) )
+	

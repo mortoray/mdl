@@ -1,4 +1,4 @@
-{% image path %}
+{% image path }
 
 ```c
 if( expr == value_0) {

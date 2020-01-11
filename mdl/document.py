@@ -37,8 +37,10 @@ def load_document( path : str, *,
 	_dump_parse = False,
 	_write_parse = None,
 	_write_doc = None,
-	_dump_pre_doc = False,
-	_dump_doc = False
+	_write_predoc = None,
+	_dump_predoc = False,
+	_dump_doc = False,
+	_process = True
 	) -> Document:
 	
 	tp = tree_parser.TreeParser()
@@ -91,16 +93,20 @@ def load_document( path : str, *,
 	root = parse_to_doc.convert( scan_node )
 	cur_doc.set_root( root )
 	
-	#if _dump_pre_doc:
-	#	doc_tree_dump.dump( root )
-	
-	doc_process.doc_process( root )
-	if _dump_doc:
+	if _dump_predoc:
 		print( dump_document( doc ) )
-
-	if _write_doc:
-		with open( _write_doc, 'w', encoding = 'utf-8' ) as out:
+	if _write_predoc:
+		with open( _write_predoc, 'w', encoding = 'utf-8' ) as out:
 			out.write( dump_document( doc ) )
+	
+	if _process:
+		doc_process.doc_process( root )
+		if _dump_doc:
+			print( dump_document( doc ) )
+
+		if _write_doc:
+			with open( _write_doc, 'w', encoding = 'utf-8' ) as out:
+				out.write( dump_document( doc ) )
 		
 	return doc
 	

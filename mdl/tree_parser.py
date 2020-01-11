@@ -12,6 +12,7 @@ _syntax_empty_line = re.compile( r'[\p{Space_Separator}\t]*$', re.MULTILINE )
 _syntax_inline_header = re.compile( r'::' )
 _syntax_inline_note = re.compile( r'\^([\p{L}\p{N}]*)' )
 
+
 class BlockLevelBuilder:
 	def __init__(self, source : Source, parser : TreeParser, indent : str):
 		self._annotations : List[Annotation] = []
@@ -33,6 +34,9 @@ class BlockLevelBuilder:
 		
 	def parse_para( self ) -> Node:
 		return self._parser._parse_para( self.source, self._indent )
+		
+	def parse_args( self, close_char : str ) -> List[str]:
+		return self._parser._parse_args( self.source, close_char )
 	
 class BlockLevelMatcher(Protocol):
 	@abstractmethod
@@ -48,6 +52,7 @@ class FeatureParse():
 	class ContentType(Enum):
 		parsed = auto()
 		raw = auto()
+		token = auto()
 		
 	open_pattern : str
 	close_char : str
@@ -69,9 +74,21 @@ class FeatureParse():
 		fp.content = class_.ContentType.raw
 		return fp
 		
+	@classmethod
+	def token(class_, open_pattern, close_char ):
+		fp = FeatureParse()
+		fp.open_pattern = open_pattern
+		fp.close_char = close_char
+		fp.content = class_.ContentType.token
+		return fp
+		
 	@property
 	def is_raw(self):
 		return self.content == self.ContentType.raw
+	
+	@property
+	def is_token(self):
+		return self.content == self.ContentType.token
 	
 
 class BLMAnnotation(BlockLevelMatcher):
@@ -120,12 +137,8 @@ class BLMTag(BlockLevelMatcher):
 	def process( self, builder : BlockLevelBuilder, match : re.Match ):
 		para = Node(NodeType.block)
 		para.class_ = match.group(1)
-		while True:
-			arg, end = builder.source.parse_string( '}' )
-			if end: 
-				break
-			if arg is not None:
-				para.add_arg( arg )
+		args = builder.parse_args( '}' )
+		para.add_args( args )
 			
 		builder.append_block( para )
 
@@ -233,6 +246,7 @@ class TreeParser:
 			'`': FeatureParse.raw('`','`'),
 			'[': FeatureParse.open_close('[',']'),
 			'(': FeatureParse.raw('(',')'),
+			'{': FeatureParse.token('{','}'),
 		}
 		
 		s = "|".join([re.escape(tok) for tok in self._syntax_feature_map.keys()])
@@ -391,6 +405,9 @@ class TreeParser:
 				if feature_parse.is_raw:
 					feature_text = self._parse_raw_escape_to( src, feature_parse.close_char )
 					feature.text = feature_text
+				elif feature_parse.is_token:
+					feature_args = self._parse_args( src, feature_parse.close_char )
+					feature.add_args( feature_args )
 				else:
 					feature_line = self._parse_line( src, feature_parse.close_char )
 					feature.add_subs( feature_line )
@@ -463,5 +480,45 @@ class TreeParser:
 			para.add_subs( line )
 			
 		return para
+		
+	def _parse_string( self, src : Source, close_char : str ) -> str:
+		text = ''
+		
+		src.skip_space()
+		while True:
+			c = src.next_char()
+			if c == '\\':
+				c = src.next_char()
+				has = True
+			elif c == close_char:
+				break
+			else:
+				text += c
+				
+		return text
+	
+	def _parse_args( self, src : Source, close_char : str ) -> List[str]:
+		result : List[str] = []
+		
+		#FEATURE: Add tuples, strings, matched blocks
+		while True:
+			src.skip_space()
+			assert not src.is_at_end()
+			
+			c = src.peek_char()
+			if c == '\"' or c == '\'':
+				end = src.next_char()
+				arg = self._parse_string( src, end )
+				result.append(arg)
+				
+			elif c == close_char:
+				_ = src.next_char()
+				break
+				
+			else:
+				arg = src.parse_token( [ close_char, '\"', '\'' ] )
+				result.append(arg)
+		
+		return result
 	
 __all__ = [ 'TreeParser' ]

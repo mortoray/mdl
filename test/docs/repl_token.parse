@@ -1,0 +1,8 @@
+container 
+	matter 
+tokena: replacement token
+
+	block 
+		text This document uses a 
+		inline/{ [doc.tokena]
+		text .

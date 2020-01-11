@@ -70,8 +70,8 @@ class Node(object):
 				return anno
 		return None
 		
-	def add_arg( self, arg : str):
-		self._args.append( arg )
+	def add_args( self, args : List[str]):
+		self._args.extend( args )
 		
 	def get_args( self ) -> List[str]:
 		return self._args[:]

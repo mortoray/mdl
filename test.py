@@ -39,6 +39,14 @@ for fname in fs.find( 'test/docs', name_regex = r".*\.mdl" ):
 			
 		status( 'Doc', doc_dump == check_dump )
 		
+	predoc_name = base + '.predoc'
+	if os.path.exists( predoc_name ):
+		doc = mdl.load_document( fname, _process = False )
+		doc_dump = document.dump_document( doc )
+		with open( predoc_name, 'r', encoding = 'utf-8' ) as check:
+			check_dump = check.read()
+			
+		status( 'PreDoc', doc_dump == check_dump )
 		
 	yaml_name = base + '.yaml'
 	if os.path.exists( yaml_name ):

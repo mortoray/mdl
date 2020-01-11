@@ -220,6 +220,9 @@ def _convert_inline( ctx, nodes_iter ) -> Sequence[doc_tree.Element]:
 			return [ doc_tree.Text( '(' + node.text + ')' ) ]
 		elif node.class_ == '::':
 			feature = doc_tree.feature_header
+		elif node.class_ == '{':
+			assert node.sub_is_empty()
+			return [ doc_tree.Token( node.get_args() ) ]
 			
 		else:
 			raise Exception("Unknown feature", node.class_)

@@ -166,6 +166,11 @@ class Note(ParagraphElement):
 		super().__init__()
 		self.add_subs( elements )
 		
+class Token(ParagraphElement):
+	def __init__(self, args : typing.List[str]):
+		super().__init__()
+		self.args = args
+		
 class Code(BlockNode):
 	def __init__(self, text : str, class_ : str):
 		super().__init__()

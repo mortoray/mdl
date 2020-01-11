@@ -79,27 +79,15 @@ class Source(object):
 		return (True, lead_space)
 		
 		
-	def parse_string( self, close_char : str ) -> Tuple[Optional[str], bool]:
+	def parse_token( self, exclude : List[str] ) -> str:
 		text = ''
-		
-		self.skip_space()
-		has = False
-		end = False
 		while not self.is_at_end():
-			c = self.next_char()
-			if c == '\\':
-				c = self.next_char()
-				has = True
-			elif c == close_char:
-				end = True
+			c = self.peek_char()
+			if _syntax_skip_space.match(c) or c in exclude:
 				break
-			elif _syntax_skip_space.search( c ) != None:
-				break
-			else:
-				text += c
-				has = True
-				
-		return (text if has else None, end)
+			text += self.next_char()
+			
+		return text
 		
 
 __all__ = [ 'Source' ]
