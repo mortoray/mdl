@@ -1,6 +1,6 @@
 
 
-#MDL - Mortoray's Document Language
+# MDL - Mortoray's Document Language
 
 My markdown language for documents: blogs, ebooks, and print.
 
@@ -8,7 +8,7 @@ I use this tool on a day-to-day basis for my own work. It is however probably no
 
 Follow the development over on [dev.to](https://dev.to/mortoray)
 
-##Running
+## Running
 
 There is an entry point defined on the module that that reads MDL files and emits either HTML or Markdown.
 
@@ -24,7 +24,7 @@ python -m mdl README.mdl --write-markdown README.md
 
 Be aware that not all emitters will support all of the doc-tree at any given time. It's all in flux now.
 
-##Python 3.8
+## Python 3.8
 
 ```
 sudo add-apt-repository ppa:deadsnakes/ppa

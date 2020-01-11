@@ -159,9 +159,7 @@ class MarkdownWriter(render.Writer):
 	def _get_section( self, node : doc_tree.Section ) -> str:
 		text = "\n"
 		if not node.title is None:
-			text += "#" * node.level
-			text += self._get_flow_list( node.title )
-			text += "\n"
+			text += f'{"#" * node.level} {self._get_flow_list( node.title )}\n'
 		
 		return text + self._get_sub( node )
 		
