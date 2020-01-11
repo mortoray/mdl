@@ -11,3 +11,7 @@ test:
 	
 freeze:
 	pip freeze --local > requirements.txt
+
+docs:
+	python -m mdl README.mdl --write-markdown README.md
+.PHONY: docs
