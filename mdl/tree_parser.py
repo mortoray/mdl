@@ -3,6 +3,7 @@ from __future__ import annotations # type: ignore
 import regex as re # type: ignore
 from typing import *
 from abc import abstractmethod
+from enum import Enum, auto
 
 from .source import Source
 from .parse_tree import *
@@ -44,16 +45,20 @@ class BlockLevelMatcher(Protocol):
 	
 # A feature may have any regex opening match, but requires a single character terminal
 class FeatureParse():
-	is_raw : bool
+	class ContentType(Enum):
+		parsed = auto()
+		raw = auto()
+		
 	open_pattern : str
 	close_char : str
+	content : Type
 	
 	@classmethod
 	def open_close(class_, open_pattern, close_char ):
 		fp = FeatureParse()
 		fp.open_pattern = open_pattern
 		fp.close_char = close_char
-		fp.is_raw = False
+		fp.content = class_.ContentType.parsed
 		return fp
 		
 	@classmethod
@@ -61,8 +66,12 @@ class FeatureParse():
 		fp = FeatureParse()
 		fp.open_pattern = open_pattern
 		fp.close_char = close_char
-		fp.is_raw = True
+		fp.content = class_.ContentType.raw
 		return fp
+		
+	@property
+	def is_raw(self):
+		return self.content == self.ContentType.raw
 	
 
 class BLMAnnotation(BlockLevelMatcher):
