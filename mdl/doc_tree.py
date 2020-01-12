@@ -8,14 +8,36 @@ from __future__ import annotations # type: ignore
 import typing, abc
 from enum import Enum
 
-VisitCallback = typing.Tuple[ typing.Callable[['Node'],bool], typing.Callable[['Node'],None] ]
+
+class VisitCallback(typing.Protocol):
+	def enter(self, node :Node) -> bool:
+		pass
+	def exit(self, node : Node) -> None:
+		pass
+		
+		
+class StackVisitor:
+	def __init__(self, proc : typing.Callable[[Node,typing.List[Node]], bool]):
+		self.stack : typing.List[Node] = []
+		self.proc = proc
+		
+	def enter( self, node : Node ) -> bool:
+		self.stack.append( node )
+		return self.proc( node, self.stack )
+
+	def exit( self, node : Node ) -> None:
+		self.stack.pop()
+		
+
 class Node(abc.ABC):
 	def __init__(self):
 		super().__init__()
 		
-	@abc.abstractmethod
-	def visit( self, proc : VisitCallback ) -> None:
-		pass
+	def visit( self, proc : VisitCallback ) -> bool:
+		if not proc.enter( self ):
+			return False
+		proc.exit( self )
+		return True
 		
 T = typing.TypeVar('T', bound = Node)
 class NodeContainer(typing.Generic[T]):
@@ -44,11 +66,16 @@ class NodeContainer(typing.Generic[T]):
 	def first_sub( self ) -> T:
 		return self._sub[0]
 		
-	def visit( self, proc : VisitCallback ) -> None:
+	def visit( self, proc : VisitCallback ) -> bool:
+		assert isinstance(self, Node)
+		if not proc.enter( self ):
+			return False
+			
 		for node in self._sub:
-			if proc[0](node):
-				node.visit( proc )
-			proc[1](node)
+			if not node.visit( proc ):
+				return False
+				
+		return True
 			
 
 class BlockNode(Node):
@@ -117,10 +144,7 @@ class Text(Element):
 	def __init__(self, text : str):
 		super().__init__()
 		self.text = text
-		
-	def visit( self, proc : VisitCallback ) -> None:
-		pass
-		
+	
 		
 class Inline(ParagraphElement):
 	def __init__(self, feature : InlineFeature):
@@ -176,9 +200,6 @@ class Code(BlockNode):
 		super().__init__()
 		self.text = text
 		self.class_ = class_
-	
-	def visit( self, proc : VisitCallback ) -> None:
-		pass
 
 class EmbedClass(Enum):
 	image = 1
@@ -190,5 +211,3 @@ class Embed(BlockNode):
 		self.class_ = class_
 		self.url = url
 		
-	def visit( self, proc : VisitCallback ) -> None:
-		pass
