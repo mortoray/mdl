@@ -14,17 +14,41 @@ def escape( text : str ) -> str:
 
 class TreeFormatter:
 	def __init__(self):
-		self._text = ""
+		self._text = io.StringIO()
 		self._context = []
 		
 	def section(self, open : str, close : Optional[str] ):
-		self._text += open
+		self._text.write( open )
 		self._context.append( close )
 		
 	def end_section(self):
 		ctx = self._context.pop()
 		if ctx is not None:
-			self._text += ctx
+			self._text.write( ctx )
+			
+	def write( self, text : str ):
+		self._text.write( text )
+		
+	@property
+	def value(self) -> str:
+		return self._text.getvalue()
+
+class XmlFormatter(TreeFormatter):
+	def __init__(self):
+		super().__init__()
+		
+	def block(self, tag : str, attrs : Dict[str,str] = {} ):
+		lead = f'<{tag}'
+		for name, value in attrs.items():
+			lead += f' {name}="{escape(value)}"'
+		lead += f'>'
+		self.section( lead, f'</{tag}>' )
+	
+	def end_block(self):
+		self.end_section()
+		
+	def text(self, text : str ):
+		self.write( escape(text) )
 		
 		
 class HtmlWriter:
@@ -32,30 +56,33 @@ class HtmlWriter:
 		self._reset()
 		
 	def _reset(self):
-		self.output = io.StringIO()
+		self.output = XmlFormatter()
 		self.notes = []
 		
 	def write( self, doc : document.Document ) -> str:
-		self.output.write( "<html>" )
-		self.output.write( "<head>" )
+		self.output.block( "html" )
+		self.output.block( "head" )
 		if 'title' in doc.meta:
-			self.output.write( f"<title>{escape(doc.meta['title'])}</title>" )
-		self.output.write( "</head>" )
-		
-		self.output.write( "<body>" )
+			self.output.block( "title" )
+			self.output.text( doc.meta['title'] )
+			self.output.end_block()
+			
+		self.output.end_block()
+
+		self.output.block( "body" )
 		self._write_node( doc.root )
-		self.output.write( "</body>" )
-		self.output.write( "</html>" )
+		self.output.end_block()
+		self.output.end_block()
 		
 		self._write_notes()
 		
-		return self.output.getvalue()
+		return self.output.value
 		
 	def write_body( self, doc : document.Document ) -> str:
 		self._reset()
 		self._write_node( doc.root )
 		self._write_notes()
-		return self.output.getvalue()
+		return self.output.value
 		
 		
 	# TODO: Does Python have a visitor pattern?
@@ -118,9 +145,9 @@ class HtmlWriter:
 			return
 			
 		html_feature = type(self).inline_map[node.feature.name]
-		self.output.write( html_feature[0] )
+		self.output.section( html_feature[0], html_feature[1] )
 		self._write_sub( node )
-		self.output.write( html_feature[1] )
+		self.output.end_section( )
 		
 	def _write_block( self, node ):
 		tag = 'p'
@@ -137,44 +164,43 @@ class HtmlWriter:
 			tag = 'div'
 			class_ = 'promote'
 			
-		self.output.write( "<{} class='{}'>".format(tag, class_) )
+		self.output.block( tag, { 'class': class_ } )
 		#TODO: self._write_flow( node.iter_sub() )  # Which makes sense, this is compacter, but often less correct?
 		self._write_sub( node )
-		self.output.write( "</{}>".format(tag) )
+		self.output.end_block()
 	
 	def _write_paragraph( self, node ):
-		self.output.write( "<p>" )
+		self.output.block( 'p' )
 		self._write_sub( node )
-		self.output.write( "</p>" )
+		self.output.end_block( )
 		
 		
 	def _write_section( self, node ):
 		level_adjust = 2
 		
 		if node.level > 0:
-			self.output.write( "<section>" )
+			self.output.block( "section" )
 			
 		if node.title != None:
-			self.output.write( "<h{}>".format( node.level + level_adjust ) )
+			self.output.block( f'h{node.level + level_adjust}' )
 			self._write_flow( node.title )
-			self.output.write( "</h{}>".format( node.level + level_adjust ) )
+			self.output.end_block()
 		
 		self._write_sub(  node )
 		if node.level > 0:
-			self.output.write( "</section>" )
+			self.output.end_block()
 		
 	def _write_text( self, node ):
-		#TODO: Escaping of course
-		self.output.write( node.text )
+		self.output.text( node.text )
 
 	def _write_link( self, node ):
 		# TODO: more escaping
-		title = ''
+		attrs = { 'href': node.url }
 		if node.title:
-			title = f' title="{node.title}"'
-		self.output.write( f"<a href='{node.url}'{title}>" )
+			attrs['title'] = node.title
+		self.output.block( 'a', attrs )
 		self._write_sub( node)
-		self.output.write( "</a>" )
+		self.output.end_block()
 
 	def _write_note( self, node ):
 		self.notes.append( node )
@@ -185,14 +211,14 @@ class HtmlWriter:
 		if len(self.notes) == 0:
 			return
 			
-		self.output.write( '<footer class="notes">' )
-		self.output.write( '<ol>' )
+		self.output.block( 'footer', { 'class': "notes" } )
+		self.output.block( 'ol' )
 		for index, note in enumerate(self.notes):
-			self.output.write( '<li id="note-{}">'.format(index+1) )
+			self.output.block( 'li', { 'id': f'note-{index+1}' } )
 			self._write_sub( note )
-			self.output.write( '</li>' )
-		self.output.write( '</ol>' )
-		self.output.write( '</footer>' )
+			self.output.end_block( )
+		self.output.end_block()
+		self.output.end_block()
 		
 	def _write_code( self, node ):
 		if node.class_ == '':
@@ -211,14 +237,14 @@ class HtmlWriter:
 		
 
 	def _write_list( self, node ):
-		self.output.write( '<ul>' )
+		self.output.block( 'ul' )
 		for sub in node.iter_sub():
 			assert isinstance( sub, doc_tree.ListItem )
 			
-			self.output.write( '<li>' )
+			self.output.block( 'li' )
 			self._write_flow( sub.iter_sub() )
-			self.output.write( '</li>' )
-		self.output.write( '</ul>' )
+			self.output.end_block()
+		self.output.end_block()
 
 	def _write_embed( self, node ):
 		if node.class_ == doc_tree.EmbedClass.image:
