@@ -1,0 +1,51 @@
++++
+title: Test Document
++++
+
+A file that includes all formattitng elements for *HTML* and *Markdown* outputs. This is to allow refactoring of the output modules without worrying about output. _It may need to be updated at times as the output can vary slightly_.^1
+
+^1 Thus a lot is stuck in one, rather than scattered through many other tests.
+
+# First Part
+
+```
+Some code.
+```
+
+We made need a [link](somewhere).
+
+```py
+def python_code():
+	changing_pygments_may_break_this()
+```
+
+# Listy Part
+
+Don't forget the headers.
+
+- List Item :: Text description.
+- Second item :: Okay.
+
+Nor the notes^2.
+
+^2 [Line note](http://special.com/)
+
+- You can also have
+- A list
+	- inside the _previous list_
+	- it's *important* to format
+- Don't also get back up.
+
+## Sub-Section
+
+@Aside
+This isn't part of the main body.
+
+> We could have a blockquote.
+
+# At The End
+
+{% image http://edaqa.com/images/kitchen.png }
+
+@Blurb
+Don't forget to say _thanks_ to *everyone*.

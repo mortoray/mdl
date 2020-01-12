@@ -105,12 +105,13 @@ class MarkdownWriter(render.Writer):
 			return False
 
 		def fail():
-			raise Exception( "Unknown node type", node )
+			raise Exception( "Unknown element type", elm )
 		
 		_ = \
 			q( doc_tree.Inline, self._get_inline ) or \
 			q( doc_tree.Link, self._get_link ) or \
 			q( doc_tree.Text, self._get_text ) or \
+			q( doc_tree.Note, self._get_note ) or \
 			fail()
 			
 		return text
@@ -170,7 +171,7 @@ class MarkdownWriter(render.Writer):
 	def _get_link( self, node : doc_tree.Link ) -> str:
 		# TODO: more escaping
 		return "[{}]({})".format( self._get_paragraph_flow(node), node.url )
-
+		
 	def _get_note( self, node : doc_tree.Note ) -> str:
 		self.notes.append( node )
 		number = len(self.notes)
@@ -183,7 +184,7 @@ class MarkdownWriter(render.Writer):
 		self.output.write( '\n----\n\n' )
 		for index, note in enumerate(self.notes):
 			self.output.write( '{}. <a id="note-{}"></a>'.format(index+1, index+1) )
-			self.output.write( self._get_node( note.node ) )
+			self.output.write( self._get_paragraph_flow( note ) )
 			self.output.write("\n")
 			
 

@@ -1,4 +1,7 @@
 # A rough test of formatting as HTML
+__all__ = ['HtmlWriter']
+
+from typing import *
 
 import io, html
 from . import doc_tree, doc_loader, document, doc_tree
@@ -9,6 +12,21 @@ from pygments.lexers import php # type: ignore
 def escape( text : str ) -> str:
 	return html.escape(text)
 
+class TreeFormatter:
+	def __init__(self):
+		self._text = ""
+		self._context = []
+		
+	def section(self, open : str, close : Optional[str] ):
+		self._text += open
+		self._context.append( close )
+		
+	def end_section(self):
+		ctx = self._context.pop()
+		if ctx is not None:
+			self._text += ctx
+		
+		
 class HtmlWriter:
 	def __init__(self):
 		self._reset()
