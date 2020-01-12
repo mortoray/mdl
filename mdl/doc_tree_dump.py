@@ -1,117 +1,165 @@
 from . import doc_tree
 from typing import *
 
-def dump(node, indent = ''):
-	print( get(node, indent) )
-
-def get(node, indent = ''):
-	if node == None:
-		return '** NONE **'
-
-	if isinstance(node, doc_tree.Section):
-		return get_section(node, indent)
-	if isinstance(node, doc_tree.Inline):
-		return get_inline(node, indent)
-	if isinstance(node, doc_tree.Link):
-		return get_link(node, indent)
-	if isinstance(node, doc_tree.Note):
-		return get_note(node, indent)
-	if isinstance(node, doc_tree.List):
-		return get_list(node, indent)
-	if isinstance(node, doc_tree.ListItem):
-		return get_list_item(node, indent)
+class Formatter:
+	def __init__(self):
+		self._text = ""
+		self._indent = []
+		self._indent_str = ""
+		self._pending_indent = False
+		self._has_line_text = False
 		
-	if isinstance(node, doc_tree.Block):
-		return get_block(node, indent)
-	if isinstance(node, doc_tree.Text):
-		return get_text(node, indent)
-	if isinstance(node, doc_tree.Paragraph):
-		return get_paragraph(node, indent)
-	if isinstance(node, doc_tree.Embed):
-		return get_embed(node, indent)
-	if isinstance(node, doc_tree.Code):
-		return get_code(node, indent)
-	if isinstance(node, doc_tree.Token):
-		return get_token(node, indent)
-	
-	raise Exception( "Unsupported type", node )
-
-def get_all_inline(nodes):
-	if nodes == None:
-		return ''
+	def indent(self, text = "\t"):
+		self._indent.append( text )
+		self._update_indent_str()
+		self._pending_ident = True
 		
-	txt = ''
-	for node in nodes:
-		txt += get(node)
-	return txt
-
-def get_all(nodes, indent):
-	txt = ''
-	for node in nodes:
-		txt += get(node, indent)
-	return txt
-	
-def _get_sub(node, indent):
-	indent += '\t'
-	txt = ""
-	for sub in node.iter_sub():
-		txt += get(sub, indent)
-	txt += '\n'
-	return txt
-
-def get_block(node, indent):
-	txt = "{}<Block:{}>\n".format( indent, node.class_.name )
-	txt += _get_sub(node, indent)
-	return txt
-	
-def get_paragraph(node, indent):
-	txt = "{}<Paragraph>\n".format( indent )
-	txt += _get_sub(node, indent)
-	return txt
-	
-def get_text(node, indent):
-	return indent + node.text
-
-def get_code(node : doc_tree.Code, indent):
-	return "{}<Code:{}>\n{}{}\n".format( indent, node.class_, indent + "\t", 
-		node.text.replace( "\n", "\n{}".format( indent + "\t") ) )
+	def unindent(self):
+		self._end_line()
+		_ = self._indent.pop()
+		self._update_indent_str()
 		
-def get_flow(nodes : Sequence[doc_tree.BlockNode], indent : str) -> str:
-	text = ''
-	for node in nodes:
-		text += get( node, indent )
-	return text
+	def _update_indent_str(self):
+		self._indent_str = "".join(self._indent)
 
-def get_section(node : doc_tree.Section, indent : str) -> str:
-	text = '{}<Section:{}>\n'.format( indent, node.level )
-	if node.title:
-		text += '{}\n'.format( get_flow(node.title, indent + '\t|') )
-	text += get_all(node._sub, indent + '\t')
-	return text
+	def _start_indent(self):
+		if self._pending_indent:
+			self._text += self._indent_str
+			self._pending_indent = False
+
+	def _end_line(self):
+		if self._has_line_text:
+			self._has_line_text = False
+			self._text += '\n'
+			self._pending_indent = True
+			
+	def write_line(self, text):
+		self._end_line()
+		self._start_indent()
+		self._text += text
+		self._text += '\n'
+		self._pending_indent = True
+		
+	def write( self, text ):
+		self._start_indent()
+		self._text += text
+		self._has_line_text = True
+		
+	def end(self):
+		self._end_line()
+		
+	@property 
+	def text(self):
+		return self._text
 	
-def get_inline(node, indent):
-	return '⁑{}｢{}｣'.format( node.feature.name, get_all_inline(node._sub) )
+class DumpVisitor:
+	def __init__(self):
+		self.output = Formatter()
+		
+	def enter( self, node : doc_tree.Node, segment : int ) -> bool:
+		if segment == 0:
+			self._write(node)
+		
+		if isinstance( node, doc_tree.BlockNode ):
+			if segment > 0:
+				self.output.indent('|')
+			else:
+				self.output.indent()
 
-def get_link(node, indent):
-	txt = '⁑link｢'
-	txt += f'url={node.url}'
-	if node.title:
-		txt += f';title={node.title}'
-	txt += f'｣｢{get_all_inline(node._sub)}｣/'
-	return txt
-
-def get_note(node, indent):
-	return '^{{{}}}'.format( get_all_inline(node._sub) )
+		return True
+		
+	def exit( self, node : doc_tree.Node, segment : int ) -> None:
+		if segment == 0:
+			if isinstance( node, doc_tree.Inline ) or isinstance( node, doc_tree.Link ):
+				self.output.write( "｣" )
+			if isinstance( node, doc_tree.Note ):
+				self.output.write( '}' )
+			
+		if isinstance( node, doc_tree.BlockNode ):
+			self.output.unindent()
+			
+	def _write(self, node) -> None:
+		def q( node_type, call ):
+			if isinstance( node, node_type ):
+				call( node )
+				return True
+			return False
+			
+		has = \
+			q( doc_tree.Section, self.get_section ) or \
+			q( doc_tree.Inline, self.get_inline ) or \
+			q( doc_tree.Link, self.get_link ) or \
+			q( doc_tree.Note, self.get_note ) or \
+			q( doc_tree.List, self.get_list ) or \
+			q( doc_tree.ListItem, self.get_list_item ) or \
+			q( doc_tree.Block, self.get_block ) or \
+			q( doc_tree.Text, self.get_text ) or \
+			q( doc_tree.Paragraph, self.get_paragraph ) or \
+			q( doc_tree.Embed, self.get_embed ) or \
+			q( doc_tree.Code, self.get_code ) or \
+			q( doc_tree.Token, self.get_token )
+		
+		if not has:
+			raise Exception( "Unsupported type", node )
 	
-def get_list(node, indent):
-	return '{}<List>\n{}'.format( indent, get_all(node._sub, indent + '\t') )
-	
-def get_list_item(node, indent):
-	return '{}<ListItem>\n{}'.format( indent, get_all(node._sub, indent + '\t') )
+	def get_block(self, node) -> None:
+		self.output.write_line( f"<Block:{node.class_.name}>" )
+		
+	def get_paragraph(self, node) -> None:
+		self.output.write_line( "<Paragraph>" )
+		
+	def get_text(self, node):
+		self.output.write( node. text )
 
-def get_embed(node, indent):
-	return '{}<Embed:{}> {}'.format( indent, node.class_.name, node.url )
+	def get_code(self, node : doc_tree.Code):
+		self.output.write_line( f"<Code:{node.class_}>" )
+		self.output.indent()
+		for line in node.text.split( "\n" ):
+			self.output.write_line( line )
+		self.output.unindent()
+			
+	def get_flow(self, nodes : Sequence[doc_tree.BlockNode]):
+		pass
+		#text = ''
+		#for node in nodes:
+		#	text += get( node, indent )
+		#return text
 
-def get_token(node, indent):
-	return '<Token {}>'.format( " ".join(node.args) )
+	def get_section(self, node : doc_tree.Section):
+		self.output.write_line( f'<Section:{node.level}>' )
+		# TODO: visitor needs to allow overriding sub-flow
+		#if node.title:
+		#	text += '{}\n'.format( get_flow(node.title, indent + '\t|') )
+		
+	def get_inline(self, node):
+		self.output.write( f'⁑{node.feature.name}｢' )
+
+	def get_link(self, node):
+		self.output.write( '⁑link｢' )
+		self.output.write( f'url={node.url}' )
+		if node.title:
+			self.output.write( f';title={node.title}' )
+		self.output.write( '｣｢' )
+
+	def get_note(self, node):
+		self.output.write( '^{' )
+		
+	def get_list(self, node):
+		self.output.write_line( '<List>' )
+		
+	def get_list_item(self, node):
+		self.output.write_line( '<ListItem>' )
+
+	def get_embed(self, node):
+		self.output.write_line( f'<Embed:{node.class_.name}> {node.url}' )
+
+	def get_token(self, node):
+		self.output.write( f'<Token {" ".join(node.args)}>' )
+		
+def get_node(node):
+	dv = DumpVisitor()
+	node.visit( dv )
+	dv.output.end()
+	return dv.output.text
 	
+

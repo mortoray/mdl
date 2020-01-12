@@ -10,10 +10,13 @@ from enum import Enum
 
 
 class VisitCallback(typing.Protocol):
-	def enter(self, node :Node) -> bool:
-		pass
-	def exit(self, node : Node) -> None:
-		pass
+	@abc.abstractmethod
+	def enter(self, node : Node, segment : int ) -> bool:
+		raise NotImplementedError
+		
+	@abc.abstractmethod
+	def exit(self, node : Node, segment : int ) -> None:
+		raise NotImplementedError
 		
 		
 class StackVisitor:
@@ -21,11 +24,11 @@ class StackVisitor:
 		self.stack : typing.List[Node] = []
 		self.proc = proc
 		
-	def enter( self, node : Node ) -> bool:
+	def enter( self, node : Node, segment : int ) -> bool:
 		self.stack.append( node )
 		return self.proc( node, self.stack )
 
-	def exit( self, node : Node ) -> None:
+	def exit( self, node : Node, segment : int ) -> None:
 		self.stack.pop()
 		
 
@@ -33,11 +36,9 @@ class Node(abc.ABC):
 	def __init__(self):
 		super().__init__()
 		
-	def visit( self, proc : VisitCallback ) -> bool:
-		if not proc.enter( self ):
-			return False
-		proc.exit( self )
-		return True
+	def visit( self, proc : VisitCallback ) -> None:
+		proc.enter( self, 0 )
+		proc.exit( self, 0 )
 		
 T = typing.TypeVar('T', bound = Node)
 class NodeContainer(typing.Generic[T]):
@@ -66,16 +67,13 @@ class NodeContainer(typing.Generic[T]):
 	def first_sub( self ) -> T:
 		return self._sub[0]
 		
-	def visit( self, proc : VisitCallback ) -> bool:
+	def visit( self, proc : VisitCallback ) -> None:
 		assert isinstance(self, Node)
-		if not proc.enter( self ):
-			return False
-			
-		for node in self._sub:
-			if not node.visit( proc ):
-				return False
+		if proc.enter( self, 0 ):
+			for node in self._sub:
+				node.visit( proc )
 				
-		return True
+		proc.exit( self, 0 )
 			
 
 class BlockNode(Node):
@@ -157,6 +155,19 @@ class Section(BlockContainer):
 		super().__init__()
 		self.title = title_text_block
 		self.level = level
+		
+	def visit( self, proc : VisitCallback ) -> None:
+		if proc.enter( self, 0 ):
+			if self.title is not None:
+				if proc.enter( self, 1 ):
+					for tnode in self.title:
+						tnode.visit( proc )
+				proc.exit( self, 1 )
+					
+			for node in self._sub:
+				node.visit( proc )
+				
+		proc.exit( self, 0 )
 	
 
 class ListItem(BlockContainer):

@@ -4,12 +4,9 @@
 	<Block:aside>
 		<Paragraph>
 			An aside paragraph.
-
 	<Block:promote>
 		<Paragraph>
 			A promotion block.
-
 	<Block:blurb>
 		<Paragraph>
 			Self-promotion blurb.
-

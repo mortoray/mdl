@@ -27,7 +27,7 @@ def dump_document( doc : Document, *, _first = True ) -> str:
 		text += "+++\n"
 	elif not _first:
 		text += "+++\n"
-	text += doc_tree_dump.get( doc.root )
+	text += doc_tree_dump.get_node( doc.root )
 	
 	for sub in doc.sub:
 		text += dump_document( sub, _first = False )
