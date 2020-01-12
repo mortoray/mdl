@@ -64,7 +64,7 @@ for fname in fs.find( 'test/docs', name_regex = r".*\.mdl" ):
 	if os.path.exists( html_name ):
 		doc = mdl.load_document( fname )
 		writer = mdl.HtmlWriter()
-		html = writer.write( doc )
+		html = writer.render( doc )
 		
 		with open( html_name, 'r', encoding = 'utf-8' ) as check:
 			check_html = check.read()

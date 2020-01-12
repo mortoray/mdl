@@ -5,7 +5,7 @@ class Writer(abc.ABC):
 		pass
 		
 	@abc.abstractmethod
-	def render(self, node):
+	def render(self, doc):
 		pass
 
 		

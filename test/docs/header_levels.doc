@@ -1,26 +1,26 @@
 <Section:0>
 	<Section:1>
-		|<Paragraph>
-		|	Level 1
+		<SectionTitle>
+			Level 1
 		<Paragraph>
 			One
 		<Section:2>
-			|<Paragraph>
-			|	Level 2
+			<SectionTitle>
+				Level 2
 			<Paragraph>
 				Two
 			<Section:3>
-				|<Paragraph>
-				|	Level 3
+				<SectionTitle>
+					Level 3
 				<Paragraph>
 					Three
 		<Section:2>
-			|<Paragraph>
-			|	Level 2-B
+			<SectionTitle>
+				Level 2-B
 			<Paragraph>
 				Four
 	<Section:1>
-		|<Paragraph>
-		|	Level 1-B
+		<SectionTitle>
+			Level 1-B
 		<Paragraph>
 			Five

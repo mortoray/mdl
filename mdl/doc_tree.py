@@ -1,21 +1,21 @@
 # Abstract document tree (the document equivalent of an abstract syntax tree)
 
 """
-Base node types form the doc type tree. They should not be instantiated.
+	Base node types form the doc type tree. They should not be instantiated.
 """
 from __future__ import annotations # type: ignore
 
 import typing, abc
 from enum import Enum
 
-
+		
 class VisitCallback(typing.Protocol):
 	@abc.abstractmethod
-	def enter(self, node : Node, segment : int ) -> bool:
+	def enter(self, node : Node ) -> bool:
 		raise NotImplementedError
 		
 	@abc.abstractmethod
-	def exit(self, node : Node, segment : int ) -> None:
+	def exit(self, node : Node ) -> None:
 		raise NotImplementedError
 		
 		
@@ -24,11 +24,11 @@ class StackVisitor:
 		self.stack : typing.List[Node] = []
 		self.proc = proc
 		
-	def enter( self, node : Node, segment : int ) -> bool:
+	def enter( self, node : Node ) -> bool:
 		self.stack.append( node )
 		return self.proc( node, self.stack )
 
-	def exit( self, node : Node, segment : int ) -> None:
+	def exit( self, node : Node ) -> None:
 		self.stack.pop()
 		
 
@@ -37,8 +37,9 @@ class Node(abc.ABC):
 		super().__init__()
 		
 	def visit( self, proc : VisitCallback ) -> None:
-		proc.enter( self, 0 )
-		proc.exit( self, 0 )
+		proc.enter( self )
+		proc.exit( self )
+
 		
 T = typing.TypeVar('T', bound = Node)
 class NodeContainer(typing.Generic[T]):
@@ -68,12 +69,12 @@ class NodeContainer(typing.Generic[T]):
 		return self._sub[0]
 		
 	def visit( self, proc : VisitCallback ) -> None:
-		assert isinstance(self, Node)
-		if proc.enter( self, 0 ):
+		assert isinstance(self, Node), self
+		if proc.enter( self ):
 			for node in self._sub:
 				node.visit( proc )
 				
-		proc.exit( self, 0 )
+		proc.exit( self )
 			
 
 class BlockNode(Node):
@@ -88,7 +89,7 @@ class BlockContainer(NodeContainer[BlockNode], BlockNode):
 	def _validate_sub( self, sub : BlockNode ) -> None:
 		assert isinstance( sub, BlockNode ), sub
 
-		
+	
 class Element(Node):
 	def __init__(self):
 		super().__init__()
@@ -150,24 +151,30 @@ class Inline(ParagraphElement):
 		assert isinstance(feature, InlineFeature)
 		self.feature = feature
 		
+class SectionTitle(ElementContainer, BlockNode):
+	pass
+	
 class Section(BlockContainer):
-	def __init__(self, level, title_text_block : typing.Optional[typing.List[BlockContainer]] = None ):
+	title : typing.Optional[SectionTitle]
+	
+	def __init__(self, level, title_text_block : typing.Optional[typing.List[ElementContainer]] = None ):
 		super().__init__()
-		self.title = title_text_block
+		if title_text_block is not None:
+			self.title = SectionTitle()
+			for ctr in title_text_block:
+				self.title.add_subs( ctr._sub )
+		else:
+			self.title = None
 		self.level = level
 		
 	def visit( self, proc : VisitCallback ) -> None:
-		if proc.enter( self, 0 ):
+		if proc.enter( self ):
 			if self.title is not None:
-				if proc.enter( self, 1 ):
-					for tnode in self.title:
-						tnode.visit( proc )
-				proc.exit( self, 1 )
-					
+				self.title.visit( proc )
+				
 			for node in self._sub:
 				node.visit( proc )
-				
-		proc.exit( self, 0 )
+		proc.exit( self )
 	
 
 class ListItem(BlockContainer):

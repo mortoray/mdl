@@ -56,24 +56,19 @@ class DumpVisitor:
 	def __init__(self):
 		self.output = Formatter()
 		
-	def enter( self, node : doc_tree.Node, segment : int ) -> bool:
-		if segment == 0:
-			self._write(node)
+	def enter( self, node : doc_tree.Node ) -> bool:
+		self._write(node)
 		
 		if isinstance( node, doc_tree.BlockNode ):
-			if segment > 0:
-				self.output.indent('|')
-			else:
-				self.output.indent()
+			self.output.indent()
 
 		return True
 		
-	def exit( self, node : doc_tree.Node, segment : int ) -> None:
-		if segment == 0:
-			if isinstance( node, doc_tree.Inline ) or isinstance( node, doc_tree.Link ):
-				self.output.write( "｣" )
-			if isinstance( node, doc_tree.Note ):
-				self.output.write( '}' )
+	def exit( self, node : doc_tree.Node ) -> None:
+		if isinstance( node, doc_tree.Inline ) or isinstance( node, doc_tree.Link ):
+			self.output.write( "｣" )
+		if isinstance( node, doc_tree.Note ):
+			self.output.write( '}' )
 			
 		if isinstance( node, doc_tree.BlockNode ):
 			self.output.unindent()
@@ -87,6 +82,7 @@ class DumpVisitor:
 			
 		has = \
 			q( doc_tree.Section, self.get_section ) or \
+			q( doc_tree.SectionTitle, self.get_section_title ) or \
 			q( doc_tree.Inline, self.get_inline ) or \
 			q( doc_tree.Link, self.get_link ) or \
 			q( doc_tree.Note, self.get_note ) or \
@@ -127,9 +123,9 @@ class DumpVisitor:
 
 	def get_section(self, node : doc_tree.Section):
 		self.output.write_line( f'<Section:{node.level}>' )
-		# TODO: visitor needs to allow overriding sub-flow
-		#if node.title:
-		#	text += '{}\n'.format( get_flow(node.title, indent + '\t|') )
+		
+	def get_section_title(self, node ):
+		self.output.write_line( f'<SectionTitle>' )
 		
 	def get_inline(self, node):
 		self.output.write( f'⁑{node.feature.name}｢' )

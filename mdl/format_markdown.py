@@ -1,4 +1,5 @@
 # A rough test of formatting as Markdown
+__all__ = ['MarkdownWriter']
 
 import io
 from . import doc_tree
@@ -7,9 +8,6 @@ from .format_html import HtmlWriter
 import regex as re # type: ignore
 
 from typing import *
-
-def format_markdown( root ):
-	return MarkdownWriter().render(root)
 
 """
 This is focused on dev.to flavoured Markdown at the moment, which seems pretty much similar to GitHub styled markdown. We'll have to add custom emitters for different markdown eventually (sharing a base class)
