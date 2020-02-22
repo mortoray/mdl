@@ -37,8 +37,12 @@ class Node(abc.ABC):
 		super().__init__()
 		
 	def visit( self, proc : VisitCallback ) -> None:
-		proc.enter( self )
+		if proc.enter( self ):
+			self.visit_children( proc )
 		proc.exit( self )
+		
+	def visit_children( self, proc : VisitCallback ) -> None:
+		pass
 
 		
 T = typing.TypeVar('T', bound = Node)
@@ -68,13 +72,10 @@ class NodeContainer(typing.Generic[T]):
 	def first_sub( self ) -> T:
 		return self._sub[0]
 		
-	def visit( self, proc : VisitCallback ) -> None:
+	def visit_children( self, proc : VisitCallback ) -> None:
 		assert isinstance(self, Node), self
-		if proc.enter( self ):
-			for node in self._sub:
-				node.visit( proc )
-				
-		proc.exit( self )
+		for node in self._sub:
+			node.visit( proc )
 			
 
 class BlockNode(Node):

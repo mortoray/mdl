@@ -37,13 +37,13 @@ doc = load_document( mdl_file,
 if args.write_html:
 	filename = args.write_html[0] 
 	print( 'Writing HTML to {}'.format( filename ) )
-	html = format_html.HtmlWriter().write( doc )
+	html = format_html.HtmlWriter().render( doc )
 	with open( filename, 'w', encoding = 'utf-8' ) as out_file:
 		out_file.write( html )
 
 if args.write_markdown:
 	filename = args.write_markdown[0] 
 	print( 'Writing Markdown to {}'.format( filename ) )
-	markdown = format_markdown.format_markdown( doc.root )
+	markdown = format_markdown.MarkdownWriter().render( doc )
 	with open( filename, 'w', encoding = 'utf-8' ) as out_file:
 		out_file.write( markdown )

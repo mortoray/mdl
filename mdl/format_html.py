@@ -2,58 +2,18 @@
 __all__ = ['HtmlWriter']
 
 from typing import *
-from enum import Enum, auto
 
-import io, html
-from . import doc_tree, doc_loader, document, doc_tree, render
+import html
+from . import doc_tree, doc_loader, document, doc_tree, render, tree_formatter
 import pygments # type: ignore
 from pygments import lexers, formatters # type: ignore
 from pygments.lexers import php # type: ignore
 
 def escape( text : str ) -> str:
 	return html.escape(text)
-
-class TFType(Enum):
-	section = auto()
-
-TFPair = Tuple[TFType,Optional[str]]
-
-class TreeFormatter:
-	def __init__(self):
-		self._text = io.StringIO()
-		self._cur_context : List[TFPair] = []
-		self._context : List[List[TFPair]] = [ self._cur_context ]
 		
-	def section(self, open : str, close : Optional[str] ):
-		self._text.write( open )
-		self._cur_context.append( (TFType.section, close) )
-		
-	def end_section(self):
-		s = self._cur_context.pop()
-		assert s[0] == TFType.section
-		if s[1] is not None:
-			self._text.write( s[1] )
-			
-	def write( self, text : str ):
-		self._text.write( text )
 
-	def open_context( self ):
-		self._cur_context = []
-		self._context.append( self._cur_context )
-	
-	def end_context( self ):
-		ctx = self._context.pop()
-		for item in ctx:
-			if item[1] is not None:
-				self._text.write(item[1])
-		self._cur_context = self._context[-1]
-		
-		
-	@property
-	def value(self) -> str:
-		return self._text.getvalue()
-
-class XmlFormatter(TreeFormatter):
+class XmlFormatter(tree_formatter.TreeFormatter):
 	def __init__(self):
 		super().__init__()
 		
@@ -82,6 +42,8 @@ class HtmlWriter(render.Writer):
 		self.stack : List[doc_tree.Node] = []
 		
 	def render( self, doc : document.Document ) -> str:
+		self._reset()
+		
 		if not self._body_only:
 			self.output.block( "html" )
 			self.output.block( "head" )
@@ -151,18 +113,6 @@ class HtmlWriter(render.Writer):
 		for sub in node.iter_sub():
 			sub.visit( self )
 
-	"""
-		HTML Flow can contain inline elements or Text. For rendering we'll use this to collapse a single paragraph into inline text, which is the most expected output.
-	"""
-	def _write_flow( self, node_list ):
-		first = True
-		for node in node_list:
-			if first and isinstance( node, doc_tree.Paragraph ):
-				self._write_node_list( node.iter_sub() )
-			else:
-				self._write_node( node )
-			
-			first = False
 	
 	# TODO: yucky string constants 
 	inline_map = {
