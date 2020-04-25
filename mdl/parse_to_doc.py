@@ -157,7 +157,9 @@ def _convert_block( ctx, nodes_iter, prev_in_section ):
 			
 			return None
 			
-		if node.class_.startswith( '#' ):
+		if node.class_ == '----':
+			para = doc_tree.BlockMark( doc_tree.MarkClass.minor_separator )
+		elif node.class_.startswith( '#' ):
 			para = doc_tree.Section( len(node.class_), para_subs  )
 		elif node.class_.startswith( '>' ):
 			para = doc_tree.Block( doc_tree.block_quote, para_subs )

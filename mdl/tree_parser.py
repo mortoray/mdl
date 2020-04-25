@@ -127,6 +127,18 @@ class BLMComment(BlockLevelMatcher):
 			line = Node(NodeType.block)
 			line.add_subs( builder.parse_line() )
 			builder.append_annotation( Annotation( 'comment', line) )
+			
+
+class BLMSeparator(BlockLevelMatcher):
+	pattern = re.compile( r'----[^$\s]*' )
+	def get_match_regex( self ) -> re.Pattern:
+		return self.pattern
+		
+	def process( self, builder : BlockLevelBuilder, match : re.Match ):
+		sep = Node(NodeType.block)
+		_ = builder.parse_line() # TODO: don't allow anything
+		sep.class_ = '----'
+		builder.append_block( sep )
 		
 
 class BLMTag(BlockLevelMatcher):
@@ -215,6 +227,7 @@ class TreeParser:
 		
 		self._block_level_matchers = [
 			BLMAnnotation(),
+			BLMSeparator(),
 			BLMLine(),
 			BLMComment(),
 			BLMTag(),

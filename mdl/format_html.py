@@ -104,6 +104,7 @@ class HtmlWriter(render.Writer):
 			q( doc_tree.Text, self._write_text ) or \
 			q( doc_tree.Paragraph, self._write_paragraph ) or \
 			q( doc_tree.Embed, self._write_embed ) or \
+			q( doc_tree.BlockMark, self._write_block_mark ) or \
 			fail()
 			
 		return result
@@ -247,3 +248,9 @@ class HtmlWriter(render.Writer):
 			pass
 		
 		return True
+
+	def _write_block_mark( self, node : doc_tree.BlockMark ) -> bool:
+		if node.class_ == doc_tree.MarkClass.minor_separator:
+			self.output.write( '<hr class="minor">' )
+		else:
+			assert False

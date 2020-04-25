@@ -93,7 +93,8 @@ class DumpVisitor:
 			q( doc_tree.Paragraph, self.get_paragraph ) or \
 			q( doc_tree.Embed, self.get_embed ) or \
 			q( doc_tree.Code, self.get_code ) or \
-			q( doc_tree.Token, self.get_token )
+			q( doc_tree.Token, self.get_token ) or \
+			q( doc_tree.BlockMark, self.get_block_mark )
 		
 		if not has:
 			raise Exception( "Unsupported type", node )
@@ -151,6 +152,10 @@ class DumpVisitor:
 
 	def get_token(self, node):
 		self.output.write( f'<Token {" ".join(node.args)}>' )
+		
+	def get_block_mark(self, node):
+		self.output.write_line( f'<BlockMark:{node.class_.name}>' )
+		
 		
 def get_node(node):
 	dv = DumpVisitor()

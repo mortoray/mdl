@@ -230,3 +230,12 @@ class Embed(BlockNode):
 		self.class_ = class_
 		self.url = url
 		
+
+class MarkClass(Enum):
+	minor_separator = 1
+
+class BlockMark(BlockNode):
+	def __init__(self, class_ : MarkClass):
+		super().__init__()
+		self.class_ = class_
+		
