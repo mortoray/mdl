@@ -254,3 +254,4 @@ class HtmlWriter(render.Writer):
 			self.output.write( '<hr class="minor">' )
 		else:
 			assert False
+		return True
