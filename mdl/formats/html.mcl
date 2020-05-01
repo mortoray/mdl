@@ -1,0 +1,3 @@
+name: Generic HTML
+render: HtmlWriter
+encoding: utf-8
