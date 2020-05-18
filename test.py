@@ -2,7 +2,7 @@
 	Test driver for document tests.
 """
 import os, yaml
-from mdl import tree_parser, parse_to_doc, format_html, doc_process, document, parse_tree_dump
+from mdl import tree_parser, parse_to_doc, format_html, doc_process, document, parse_tree_dump, structure
 import mdl
 from shelljob import fs #type: ignore
 
@@ -75,3 +75,19 @@ for fname in fs.find( 'test/docs', name_regex = r".*\.mdl" ):
 		
 		
 		
+for fname in fs.find( 'test/structures', name_regex = r".*\.mcl" ):
+	print( fname, end=' ')
+	base = os.path.splitext( fname )[0]
+	
+	json_name = base + '.json'
+	if os.path.exists( json_name ):
+		obj = structure.load_structure( fname )
+		json = structure.format_json( obj, pretty = True )
+		
+		with open( json_name, 'r', encoding = 'utf-8' ) as check:
+			check_json = check.read()
+			
+		status( 'JSON', json == check_json )
+		
+	print()
+	

@@ -61,7 +61,7 @@ def main() -> None:
 		list_formats()
 		
 	outputs : List[Output] = []
-	for (ref, filename) in args.write:
+	for (ref, filename) in (args.write or []):
 		format = load_format(ref)
 		outputs.append( Output( filename, format ))
 

@@ -1,0 +1,11 @@
+one: 1
+two: "two"
+null: null
+notnull: "null"
+true: true
+nottrue: "true"
+false: false
+notfalse: "false"
+float: 1.5
+mfloat: 1.5e3
+neg: -3.5e5

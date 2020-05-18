@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import  *
 import regex as re #type: ignore
+import json
 
 from .source import Source
 
@@ -18,13 +19,38 @@ ObjectType = Dict[str, EntryType]
 ListType = List[EntryType]
 
 def parse_structure( data : str ) -> ObjectType:
-	src = Source( data )
-	
+	src = Source.with_text( data )
 	return _parse_object( src, '' )
 	
 	
+def load_structure( filename : str ) -> ObjectType:
+	src = Source.with_filename( filename )
+	return _parse_object( src, '' )
+
+	
 _syntax_name = re.compile( r'([\p{L}-]+):' )
 
+def promote_value( value : str ):
+	# TODO: have specific conversions allowed
+	try:
+		return int(value)
+	except ValueError:
+		pass
+		
+	try:
+		return float(value)
+	except ValueError:
+		pass
+		
+	if value == "true":
+		return True
+	if value == "false":
+		return False
+	if value == "null":
+		return None
+		
+	return value
+	
 def _parse_object( src : Source, indent : str ) -> ObjectType:
 	ret : ObjectType = {}
 
@@ -37,7 +63,14 @@ def _parse_object( src : Source, indent : str ) -> ObjectType:
 		assert name_m is not None
 		name = name_m.group(1)
 		
-		value = src.match_line().strip()
+		src.skip_space()
+		next_char = src.peek_char()
+		if next_char == '\"':
+			src.next_char()
+			value = src.parse_string( next_char )
+		else:
+			value = src.match_line().strip()
+			value = promote_value(value)
 		ret[name] = value
 		
 		src.skip_empty_lines()
@@ -70,3 +103,17 @@ def dump_structure( obj : EntryType, indent : str = '', *, _is_initial = True ) 
 		raise Exception( "Invalid structure type", obj )
 		
 	return text
+
+	
+def format_json( obj : EntryType, *, pretty = False ) -> str:
+	# See if standard package works for now
+	kwargs : Dict[str,Any] = {
+		'ensure_ascii': False,
+	}
+	if pretty: 
+		kwargs['indent'] = "\t"
+		kwargs['sort_keys'] = True
+		
+	return json.dumps(obj, **kwargs)
+
+	

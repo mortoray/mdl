@@ -1,0 +1,13 @@
+{
+	"false": false,
+	"float": 1.5,
+	"mfloat": 1500.0,
+	"neg": -350000.0,
+	"notfalse": "false",
+	"notnull": "null",
+	"nottrue": "true",
+	"null": null,
+	"one": 1,
+	"true": true,
+	"two": "two"
+}

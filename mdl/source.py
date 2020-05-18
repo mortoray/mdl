@@ -8,13 +8,28 @@ _syntax_empty_line = re.compile( r'[\p{Space_Separator}\t]*$', re.MULTILINE )
 _syntax_line_ends = re.compile( r'[\n\r]' )
 
 class Source(object):
-	def __init__(self, text):
+	class _private:
+		pass
+		
+	def __init__(self, token: _private, text=None):
 		#FEATURE: normalize text line-endings
 		
 		self._text = text
 		self._at = 0
 		self._size = len(text)
 
+	@classmethod 
+	def with_text( class_, text : str ) -> 'Source':
+		src = Source(Source._private(), text=text)
+		return src
+		
+	@classmethod
+	def with_filename( class_, filename : str ) -> 'Source':
+		in_file = open( filename, 'r', encoding = 'utf-8' )
+		in_text = in_file.read()
+		src = Source(Source._private(), in_text)
+		return src
+		
 	def skip_space(self):
 		self.match( _syntax_skip_space )
 		
@@ -88,6 +103,22 @@ class Source(object):
 			text += self.next_char()
 			
 		return text
+		
+	def parse_string( self, close_char ) -> str:
+		text = ''
+		
+		while True:
+			c = self.next_char()
+			if c == '\\':
+				c = self.next_char()
+				has = True
+			elif c == close_char:
+				break
+			
+			text += c
+				
+		return text
+	
 		
 
 __all__ = [ 'Source' ]

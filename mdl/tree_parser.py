@@ -271,9 +271,7 @@ class TreeParser:
 		@return A node representing the document
 	"""
 	def parse_file( self, filename : str ) -> Node:
-		in_file = open( filename, 'r', encoding = 'utf-8' )
-		in_text = in_file.read()
-		in_source = Source(in_text)
+		in_source = Source.with_filename( filename )
 	
 		root = Node(NodeType.container)
 		self._parse_container( root, in_source, '' )
@@ -494,22 +492,6 @@ class TreeParser:
 			
 		return para
 		
-	def _parse_string( self, src : Source, close_char : str ) -> str:
-		text = ''
-		
-		src.skip_space()
-		while True:
-			c = src.next_char()
-			if c == '\\':
-				c = src.next_char()
-				has = True
-			elif c == close_char:
-				break
-			else:
-				text += c
-				
-		return text
-	
 	def _parse_args( self, src : Source, close_char : str ) -> List[str]:
 		result : List[str] = []
 		
@@ -521,7 +503,7 @@ class TreeParser:
 			c = src.peek_char()
 			if c == '\"' or c == '\'':
 				end = src.next_char()
-				arg = self._parse_string( src, end )
+				arg = src.parse_string( end )
 				result.append(arg)
 				
 			elif c == close_char:
