@@ -113,7 +113,7 @@ class Source(object):
 	def parse_string( self, close_char ) -> str:
 		text = ''
 		
-		while True:
+		while not self.is_at_end():
 			c = self.next_char()
 			if c == '\\':
 				c = self.next_char()
