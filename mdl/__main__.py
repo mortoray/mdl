@@ -33,7 +33,7 @@ def list_formats() -> None:
 		
 	
 def main() -> None:
-	cli_args = argparse.ArgumentParser( description = 'Process and MDL document' )
+	cli_args = argparse.ArgumentParser( description = 'Process an MDL document' )
 
 	cli_args.add_argument( 'mdl_file', metavar = 'input-file.mdl', nargs = '?', help='Input document' )
 	cli_args.add_argument( '--write', nargs=2, action='append', 

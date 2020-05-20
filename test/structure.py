@@ -14,7 +14,7 @@ one: 1
 two:   hello  
 three: a b c 
 """ )
-	assert obj['one'] == '1'
+	assert obj['one'] == 1
 	assert obj['two'] == 'hello'
 	assert obj['three'] == 'a b c'
 	

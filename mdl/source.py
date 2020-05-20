@@ -1,7 +1,10 @@
 from typing import *
 import regex as re #type: ignore
 
+re.DEFAULT_VERSION = re.VERSION1
+
 _syntax_skip_space = re.compile( r'\s+' )
+_syntax_skip_nonline_space = re.compile( r'[\s--[\r\n]]+' )
 _syntax_peek_line = re.compile( r'(.*)$', re.MULTILINE )
 _syntax_lead_space = re.compile( r'([\p{Space_Separator}\t]*)' )
 _syntax_empty_line = re.compile( r'[\p{Space_Separator}\t]*$', re.MULTILINE )
@@ -32,6 +35,9 @@ class Source(object):
 		
 	def skip_space(self):
 		self.match( _syntax_skip_space )
+		
+	def skip_nonline_space(self):
+		self.match( _syntax_skip_nonline_space )
 		
 	def skip_empty_lines(self) -> None:
 		while not self.is_at_end():

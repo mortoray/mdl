@@ -13,8 +13,8 @@ ObjectType = Dict[str, 'EntryType']
 ListType = List['EntryType']
 EntryType = Union[str, 'ListType', 'ObjectType']
 """
-#EntryType = Union[str, List[EntryType], Dict[str,EntryType]]
-EntryType = TypeVar('EntryType')
+ForwardEntryType = TypeVar('ForwardEntryType')
+EntryType = Union[str, float, bool, None, List[ForwardEntryType], Dict[str,ForwardEntryType]]
 ObjectType = Dict[str, EntryType]
 ListType = List[EntryType]
 
@@ -30,7 +30,7 @@ def load_structure( filename : str ) -> ObjectType:
 	
 _syntax_name = re.compile( r'([\p{L}-]+):' )
 
-def promote_value( value : str ):
+def promote_value( value : str ) -> Union[str,float,bool,None]:
 	# TODO: have specific conversions allowed
 	try:
 		return int(value)
@@ -51,29 +51,44 @@ def promote_value( value : str ):
 		
 	return value
 	
+	
 def _parse_object( src : Source, indent : str ) -> ObjectType:
 	ret : ObjectType = {}
 
-	src.skip_empty_lines()
-	while not src.is_at_end():
-		if not src.match_indent( indent )[0]:
-			return ret
+	value :  EntryType
+	
+	while True:
+		src.skip_empty_lines()
+		if src.is_at_end():
+			break
+			
+		(match_indent, next_indent) = src.match_indent( indent )
+		if not match_indent:
+			if len(next_indent) < len(indent):
+				break
+			if len(next_indent) > len(indent):
+				raise Exception('invalid-syntax')
 			
 		name_m = src.match( _syntax_name )
 		assert name_m is not None
 		name = name_m.group(1)
 		
-		src.skip_space()
+		src.skip_nonline_space()
 		next_char = src.peek_char()
 		if next_char == '\"':
 			src.next_char()
 			value = src.parse_string( next_char )
 		else:
-			value = src.match_line().strip()
-			value = promote_value(value)
+			parse_value = src.match_line().strip()
+			if parse_value == '':
+				src.skip_empty_lines()
+				(match_indent, next_indent) = src.match_indent(indent)
+				if not match_indent and len(next_indent) > len(indent):
+					value = _parse_object(src, next_indent)
+			else:
+				value = promote_value(parse_value)
 		ret[name] = value
 		
-		src.skip_empty_lines()
 		
 	return ret
 
