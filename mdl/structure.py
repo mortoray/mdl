@@ -33,7 +33,7 @@ def _parse_source( src : Source ) -> ObjectType:
 	return obj
 
 	
-_syntax_name = re.compile( r'([\p{L}-_]+):' )
+_syntax_name = re.compile( r'([\p{L}-_.]+):' )
 
 def promote_value( value : str ) -> Union[str,float,bool,None]:
 	# TODO: have specific conversions allowed
