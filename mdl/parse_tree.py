@@ -1,8 +1,10 @@
 # Tree parsing
 from __future__ import annotations #type: ignore
 from typing import *
+from .source import SourceLocation
 
 from enum import Enum
+
 
 class NodeType(Enum):
 	# may contain blocks and containers as children
@@ -18,6 +20,7 @@ class NodeType(Enum):
 	# may not contain children, data is the structured data
 	matter = 6
 	
+	
 class Annotation(object):
 	def __init__(self, class_, node = None):
 		self._class_ = class_
@@ -31,19 +34,21 @@ class Annotation(object):
 	def node( self ):
 		return self._node
 		
+		
 class Node(object):
-	def __init__(self, type):
-		self._sub = []
+	def __init__(self, type, loc : SourceLocation):
+		self._sub: List[Node] = []
 		self._text = ''
 		self._type = type
 		self._class_ = ''
 		self._attr = None
 		self._annotations = None
-		self._args = []
+		self._args: List[str] = []
 		self._data = None
+		self._loc = loc
 		
 	def __str__( self ):
-		return "{}@{} \"{}\"".format( self._type, self._class_, self._text )
+		return f"{self._type}/{self._class_}:{self._loc and self._loc.translate()} \"{self._text}\""
 		
 	def validate_sub( self, sub ):
 		if self._type == NodeType.text:
@@ -80,7 +85,7 @@ class Node(object):
 		return len(self._args) > 0
 		
 	def promote_to_container( self ) -> None:
-		first_child = Node( self._type )
+		first_child = Node( self._type, self._loc )
 		first_child._text = self._text
 		self._text = ''
 
@@ -96,7 +101,7 @@ class Node(object):
 		Splits this container node at the index, keeping children before the index in this container and those after in the returned container.
 	"""
 	def split_at( self, index : int ) -> Node:
-		container = Node( self._type )
+		container = Node( self._type, self._sub[index]._loc )
 		container._sub = self._sub[index:]
 		self._sub = self._sub[:index]
 		return container
@@ -120,6 +125,10 @@ class Node(object):
 		if len(self._sub) > 0:
 			return self._sub[-1]
 		return None
+		
+	@property
+	def location(self):
+		return self._loc
 		
 	@property
 	def text(self):

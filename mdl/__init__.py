@@ -4,3 +4,4 @@ from . import tree_parser, parse_to_doc, format_html, doc_process, document, for
 # Names exposed as part of the high-level API
 from .format_html import HtmlWriter
 from .document import load_document, Document
+from .structure import  format_json

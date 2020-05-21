@@ -1,5 +1,8 @@
+__all__ = [ 'Source', 'SourceLocation' ]
+
 from typing import *
 import regex as re #type: ignore
+import sys
 
 re.DEFAULT_VERSION = re.VERSION1
 
@@ -10,27 +13,74 @@ _syntax_lead_space = re.compile( r'([\p{Space_Separator}\t]*)' )
 _syntax_empty_line = re.compile( r'[\p{Space_Separator}\t]*$', re.MULTILINE )
 _syntax_line_ends = re.compile( r'[\n\r]' )
 
+
+class SourceLocation(NamedTuple):
+	source: 'Source'
+	offset: int
+	
+	def translate(self, tab_size = 4) -> Tuple[Optional[str],int,int]:
+		return (
+			self.source._path,
+			self.line_at(),
+			self.col_at(tab_size)
+		)
+		
+		
+	def line_at(self) -> int:
+		q = self.offset + self.source._base_offset
+		line = 1
+		while q > 0:
+			q -= 1
+			c = self.source._text[q]
+			if c == '\n':
+				line += 1
+				
+		return line
+	
+	def col_at(self, tab_size = 4) -> int:
+		q = self.offset + self.source._base_offset
+		col = 1
+		while q > 0:
+			q -= 1
+			c = self.source._text[q]
+			if c == '\n':
+				break
+			if c == '\t':
+				col += tab_size
+			else:
+				col += 1
+		
+		return col
+		
+	
 class Source(object):
 	class _private:
 		pass
 		
-	def __init__(self, token: _private, text=None):
+	def __init__(self, token: _private, text, base_offset : int = 0, path : Optional[str] = None ):
 		#FEATURE: normalize text line-endings
 		
 		self._text = text
 		self._at = 0
 		self._size = len(text)
+		self._path = path
+		self._base_offset = base_offset
 
 	@classmethod 
-	def with_text( class_, text : str ) -> 'Source':
-		src = Source(Source._private(), text=text)
+	def with_text( class_, text : str, base_location : Optional[SourceLocation] = None ) -> 'Source':
+		src = Source(
+			Source._private(), 
+			text=text, 
+			base_offset=base_location.offset if not base_location is None else 0,
+			path=base_location.source._path if not base_location is None else None,
+		)
 		return src
 		
 	@classmethod
 	def with_filename( class_, filename : str ) -> 'Source':
 		in_file = open( filename, 'r', encoding = 'utf-8' )
 		in_text = in_file.read()
-		src = Source(Source._private(), in_text)
+		src = Source(Source._private(), in_text, path=filename)
 		return src
 		
 	def skip_space(self):
@@ -125,6 +175,15 @@ class Source(object):
 				
 		return text
 	
+	
+	@property
+	def location(self) -> SourceLocation:
+		return SourceLocation(self, self._at)
+		
+	def fail(self, message):
+		loc = self.location.translate()
+		msg = f'{loc[0]}:{loc[1]},{loc[2]}:{message}'
+		print( msg, file=sys.stderr )
+		raise Exception(msg)
 		
 
-__all__ = [ 'Source' ]

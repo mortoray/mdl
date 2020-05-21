@@ -4,7 +4,7 @@ from typing import  *
 import regex as re #type: ignore
 import json
 
-from .source import Source
+from .source import Source, SourceLocation
 
 """
 There appears to be no way to define these cyclic types. :(
@@ -18,8 +18,8 @@ EntryType = Union[str, float, bool, None, List[ForwardEntryType], Dict[str,Forwa
 ObjectType = Dict[str, EntryType]
 ListType = List[EntryType]
 
-def parse_structure( data : str ) -> ObjectType:
-	return _parse_source( Source.with_text( data ) )
+def parse_structure( data : str, location : Optional[SourceLocation] = None ) -> ObjectType:
+	return _parse_source( Source.with_text( data, location ) )
 	
 	
 def load_structure( filename : str ) -> ObjectType:
@@ -33,7 +33,7 @@ def _parse_source( src : Source ) -> ObjectType:
 	return obj
 
 	
-_syntax_name = re.compile( r'([\p{L}-]+):' )
+_syntax_name = re.compile( r'([\p{L}-_]+):' )
 
 def promote_value( value : str ) -> Union[str,float,bool,None]:
 	# TODO: have specific conversions allowed
@@ -105,7 +105,8 @@ def _parse_object( src : Source, indent : str ) -> EntryType:
 			
 		else:
 			name_m = src.match( _syntax_name )
-			assert name_m is not None
+			if name_m is None:
+				src.fail('expecting-a-name')
 			name = name_m.group(1)
 	
 			src.skip_nonline_space()

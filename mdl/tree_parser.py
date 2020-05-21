@@ -5,7 +5,7 @@ from typing import *
 from abc import abstractmethod
 from enum import Enum, auto
 
-from .source import Source
+from .source import Source, SourceLocation
 from .parse_tree import *
 
 _syntax_empty_line = re.compile( r'[\p{Space_Separator}\t]*$', re.MULTILINE )
@@ -37,6 +37,11 @@ class BlockLevelBuilder:
 		
 	def parse_args( self, close_char : str ) -> List[str]:
 		return self._parser._parse_args( self.source, close_char )
+		
+	@property
+	def location( self ) -> SourceLocation:
+		return self.source.location
+		
 	
 class BlockLevelMatcher(Protocol):
 	@abstractmethod
@@ -46,6 +51,7 @@ class BlockLevelMatcher(Protocol):
 	@abstractmethod
 	def process( self, builder : BlockLevelBuilder, match : re.Match ):
 		raise NotImplementedError()
+	
 	
 # A feature may have any regex opening match, but requires a single character terminal
 class FeatureParse():
@@ -107,7 +113,7 @@ class BLMLine(BlockLevelMatcher):
 		
 	def process( self, builder : BlockLevelBuilder, match : re.Match ):
 		class_ = match.group(1)
-		line = Node(NodeType.block)
+		line = Node(NodeType.block, builder.location)
 		line.class_ = class_
 		line.add_subs( builder.parse_line() )
 		builder.append_block( line )
@@ -124,7 +130,7 @@ class BLMComment(BlockLevelMatcher):
 			para = builder.parse_para()
 			builder.append_annotation( Annotation( 'comment', para ) )
 		else:
-			line = Node(NodeType.block)
+			line = Node(NodeType.block, builder.location)
 			line.add_subs( builder.parse_line() )
 			builder.append_annotation( Annotation( 'comment', line) )
 			
@@ -135,7 +141,7 @@ class BLMSeparator(BlockLevelMatcher):
 		return self.pattern
 		
 	def process( self, builder : BlockLevelBuilder, match : re.Match ):
-		sep = Node(NodeType.block)
+		sep = Node(NodeType.block, builder.location)
 		_ = builder.parse_line() # TODO: don't allow anything
 		sep.class_ = '----'
 		builder.append_block( sep )
@@ -147,7 +153,7 @@ class BLMTag(BlockLevelMatcher):
 		return self.pattern
 		
 	def process( self, builder : BlockLevelBuilder, match : re.Match ):
-		para = Node(NodeType.block)
+		para = Node(NodeType.block, builder.location)
 		para.class_ = match.group(1)
 		args = builder.parse_args( '}' )
 		para.add_args( args )
@@ -187,7 +193,7 @@ class BLMRaw(BlockLevelMatcher):
 		return self.pattern_open
 		
 	def process( self, builder : BlockLevelBuilder, match : re.Match ):
-		raw = Node(NodeType.raw)
+		raw = Node(NodeType.raw, builder.location)
 		line_match = builder.source.match(self.pattern_rest_line)
 		assert line_match != None
 		end_match, raw_text = builder.source.to_match(self.pattern_close)
@@ -205,7 +211,7 @@ class BLMMatter(BlockLevelMatcher):
 		return self.pattern_open
 	
 	def process( self, builder : BlockLevelBuilder, match : re.Match ):
-		matter = Node(NodeType.matter)
+		matter = Node(NodeType.matter, builder.location)
 		end_match, raw_text = builder.source.to_match(self.pattern_end)
 		assert end_match != None
 		matter.text = raw_text
@@ -273,7 +279,7 @@ class TreeParser:
 	def parse_file( self, filename : str ) -> Node:
 		in_source = Source.with_filename( filename )
 	
-		root = Node(NodeType.container)
+		root = Node(NodeType.container, in_source.location)
 		self._parse_container( root, in_source, '' )
 		return root
 	
@@ -322,13 +328,13 @@ class TreeParser:
 		assert len(node.text) == 0
 		sub = []
 		
-		open_bit = Node( NodeType.text )
+		open_bit = Node( NodeType.text, node.location )
 		open_bit.text = node.class_
 		sub.append( open_bit )
 				
 		sub.extend( node.iter_sub() )
 		
-		close_bit = Node( NodeType.text )
+		close_bit = Node( NodeType.text, node.location )
 		close_bit.text = self._syntax_feature_map[node.class_]
 		sub.append( close_bit )
 		return sub
@@ -344,7 +350,7 @@ class TreeParser:
 			if len(text) == 0:
 				return
 			
-			n = Node(NodeType.text)
+			n = Node(NodeType.text, src.location)
 			n.text = text
 			push_bit(n)
 			text = ''
@@ -367,7 +373,7 @@ class TreeParser:
 				
 			collect = bits[at:]
 			bits = bits[:at]
-			header = Node(NodeType.inline)
+			header = Node(NodeType.inline, src.location)
 			header.class_ = '::'
 			header.add_subs( collect )
 			push_bit( header )
@@ -392,7 +398,7 @@ class TreeParser:
 			if note_match is not None:
 				note_name = note_match.group(1)
 				end_text()
-				note = Node( NodeType.inline )
+				note = Node( NodeType.inline, src.location )
 				note.class_ = '^'
 				note.text = note_name
 				push_bit( note )
@@ -411,7 +417,7 @@ class TreeParser:
 				
 				feature_parse = self._syntax_feature_map[feature_class]
 				
-				feature = Node( NodeType.inline )
+				feature = Node( NodeType.inline, src.location )
 				feature.class_ = feature_class
 				if feature_parse.is_raw:
 					feature_text = self._parse_raw_escape_to( src, feature_parse.close_char )
@@ -465,7 +471,7 @@ class TreeParser:
 		return src.next_char()
 		
 	def _parse_para( self, src : Source, indent : str ) -> Node:
-		para = Node(NodeType.block)
+		para = Node(NodeType.block, src.location)
 		first = True
 		while not src.is_at_end():
 		
