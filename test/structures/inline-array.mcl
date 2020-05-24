@@ -1,0 +1,3 @@
+inline: [a b c]
+inline_: [ a   5  c 2.5]
+inline-: [null "hi" there false \]]

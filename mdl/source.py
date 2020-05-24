@@ -160,16 +160,21 @@ class Source(object):
 			
 		return text
 		
-	def parse_string( self, close_char ) -> str:
+	def parse_string( self, close_char : Optional[str], *, end_on_space : bool = False, consume_terminal : bool = True ) -> str:
 		text = ''
 		
 		while not self.is_at_end():
+			c = self.peek_char()
+			if ( (end_on_space and (c == '\r' or c == '\n' or c == ' ' or c== '\t')) or # TODO: Unicode space?
+				c == close_char):
+				if consume_terminal:
+					self.next_char()
+				break
+					
 			c = self.next_char()
 			if c == '\\':
 				c = self.next_char()
 				has = True
-			elif c == close_char:
-				break
 			
 			text += c
 				

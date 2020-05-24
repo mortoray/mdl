@@ -18,14 +18,16 @@ EntryType = Union[str, float, bool, None, List[ForwardEntryType], Dict[str,Forwa
 ObjectType = Dict[str, EntryType]
 ListType = List[EntryType]
 
-def parse_structure( data : str, location : Optional[SourceLocation] = None ) -> ObjectType:
+def structure_parse( data : str, location : Optional[SourceLocation] = None ) -> ObjectType:
 	return _parse_source( Source.with_text( data, location ) )
 	
-	
-def load_structure( filename : str ) -> ObjectType:
+#def structure_parse_list( data : str, location : Optiona[SourceLocation] = None ) -> ListType:
+#	obj = _parse_object( src, '' )
+
+def structure_load( filename : str ) -> ObjectType:
 	return _parse_source( Source.with_filename( filename ) )
 
-	
+
 def _parse_source( src : Source ) -> ObjectType:
 	obj = _parse_object( src, '' )
 	if not isinstance(obj, dict):
@@ -33,7 +35,7 @@ def _parse_source( src : Source ) -> ObjectType:
 	return obj
 
 	
-_syntax_name = re.compile( r'([\p{L}-_.]+):' )
+_syntax_name = re.compile( r'([\p{L}\p{N}-_.@]+):' )
 
 def promote_value( value : str ) -> Union[str,float,bool,None]:
 	# TODO: have specific conversions allowed
@@ -57,22 +59,63 @@ def promote_value( value : str ) -> Union[str,float,bool,None]:
 	return value
 	
 
-def _parse_value( src : Source, indent : str ) -> EntryType:
+def _parse_inline_value( src : Source ) -> Optional[EntryType]:
 	next_char = src.peek_char()
 	if next_char == '\"':
 		src.next_char()
 		return src.parse_string( next_char )
 		
-	parse_value = src.parse_string( '\n' ).strip()
-	if parse_value == '':
+	if next_char == '[':
+		src.next_char()
+		return _parse_inline_list( src, ']' )
+	return None
+	
+def _parse_line_value( src : Source, indent : str ) -> EntryType:
+	ivalue = _parse_inline_value( src )
+	line_value = src.parse_string( '\n' ).strip()
+	
+	if not ivalue is None:
+		if line_value != '':
+			src.fail( 'trailing-line-value' )
+		return ivalue
+		
+	if line_value == '':
 		src.skip_empty_lines()
 		(match_indent, next_indent) = src.match_indent(indent)
 		if not match_indent and len(next_indent) > len(indent):
 			return _parse_object(src, next_indent)
 		raise Exception("missing-value")
 		
-	return promote_value(parse_value)
+	return promote_value(line_value)
 
+def _parse_space_value( src : Source, terminal : Optional[str] ) -> EntryType:
+	ivalue = _parse_inline_value( src )
+	if not ivalue is None:
+		return ivalue
+		
+	value = src.parse_string( terminal, end_on_space = True, consume_terminal = False )
+	return promote_value( value )
+	
+def _parse_inline_list( src : Source, terminal : Optional[str] ) -> ListType:
+	ret_list : ListType = []
+	
+	while True:
+		src.skip_space()
+		if src.is_at_end():
+			if terminal is None:
+				break
+			src.fail( 'incomplete-inline-list' )
+			
+		next_char = src.peek_char()
+		if next_char == terminal:
+			src.next_char()
+			break
+			
+		value = _parse_space_value( src, terminal )
+		ret_list.append(value)
+		
+		
+	return ret_list
 	
 def _parse_object( src : Source, indent : str ) -> EntryType:
 	ret : Union[ObjectType,ListType] = {}
@@ -98,7 +141,7 @@ def _parse_object( src : Source, indent : str ) -> EntryType:
 				ret = ret_list
 				is_array = True
 			src.skip_nonline_space()
-			ret_list.append( _parse_value(src, indent) )
+			ret_list.append( _parse_line_value(src, indent) )
 				
 		elif is_array:
 			raise Exception('mixing-non-array-item')
@@ -110,7 +153,7 @@ def _parse_object( src : Source, indent : str ) -> EntryType:
 			name = name_m.group(1)
 	
 			src.skip_nonline_space()
-			value = _parse_value(src, indent)
+			value = _parse_line_value(src, indent)
 			ret[name] = value
 		
 	return ret
@@ -144,7 +187,7 @@ def dump_structure( obj : EntryType, indent : str = '', *, _is_initial = True ) 
 	return text
 
 	
-def format_json( obj : EntryType, *, pretty = False ) -> str:
+def structure_format_json( obj : EntryType, *, pretty = False ) -> str:
 	# See if standard package works for now
 	kwargs : Dict[str,Any] = {
 		'ensure_ascii': False,

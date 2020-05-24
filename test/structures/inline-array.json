@@ -1,0 +1,20 @@
+{
+	"inline": [
+		"a",
+		"b",
+		"c"
+	],
+	"inline-": [
+		null,
+		"hi",
+		"there",
+		false,
+		"]"
+	],
+	"inline_": [
+		"a",
+		5,
+		"c",
+		2.5
+	]
+}

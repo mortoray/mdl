@@ -22,7 +22,7 @@ writerMap = {
 def load_format(ref: str) -> Dict:
 	data = resource_string(__package__, f'formats/{ref}.mcl')
 	text = codecs.decode(data, 'utf-8')
-	return structure.parse_structure(text)
+	return structure.structure_parse(text)
 	
 def list_formats() -> None:
 	format_files = resource_listdir(__package__, 'formats')

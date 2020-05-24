@@ -81,8 +81,8 @@ for fname in fs.find( 'test/structures', name_regex = r".*\.mcl" ):
 	
 	json_name = base + '.json'
 	if os.path.exists( json_name ):
-		obj = structure.load_structure( fname )
-		json = structure.format_json( obj, pretty = True )
+		obj = structure.structure_load( fname )
+		json = structure.structure_format_json( obj, pretty = True )
 		
 		with open( json_name, 'r', encoding = 'utf-8' ) as check:
 			check_json = check.read()

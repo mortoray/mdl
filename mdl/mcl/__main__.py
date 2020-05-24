@@ -19,11 +19,11 @@ def main() -> None:
 	
 	if args.mcl_file:
 		print( f'Loading MCL {args.mcl_file}' )
-		obj = structure.load_structure( args.mcl_file )
+		obj = structure.structure_load( args.mcl_file )
 		
 		if args.write_json:
 			print( f'Writing JSON {args.write_json}' )
-			json = structure.format_json( obj, pretty = True )
+			json = structure.structure_format_json( obj, pretty = True )
 			with open( args.write_json, 'w', encoding='utf-8' ) as out_file:
 				out_file.write( json )
 	

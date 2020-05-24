@@ -6,7 +6,7 @@ check:
 
 test:
 	python test.py
-	python -m pytest test/*.py
+	#python -m pytest test/*.py
 .PHONY: test
 	
 freeze:

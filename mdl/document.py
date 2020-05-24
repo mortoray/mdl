@@ -58,7 +58,7 @@ def load_document( path : str, *,
 	
 	matter = node.iter_sub()[0]
 	if matter.type == tree_parser.NodeType.matter:
-		meta = structure.parse_structure( matter.text, matter.location )
+		meta = structure.structure_parse( matter.text, matter.location )
 		doc.set_meta( meta )
 		node.remove_sub_at( 0 )
 		
@@ -80,7 +80,7 @@ def load_document( path : str, *,
 				doc.sub.append( cur_doc )
 				new_doc = True
 				
-				meta = structure.parse_structure( matter.text )
+				meta = structure.structure_parse( matter.text, matter.location )
 				cur_doc.set_meta( meta )
 				next_scan.remove_sub_at( 0 )
 
