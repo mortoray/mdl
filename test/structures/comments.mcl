@@ -1,0 +1,14 @@
+# The next value
+a: value
+
+# trailing
+b: hi # comment
+
+c: # before bits
+	- a
+	# between
+	- b #After
+	
+q: 6 # number
+r: null#null   
+t: hi#short

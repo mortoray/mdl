@@ -36,6 +36,9 @@ def _parse_source( src : Source ) -> ObjectType:
 
 	
 _syntax_name = re.compile( r'([\p{L}\p{N}-_.@]+):' )
+_syntax_comment = re.compile( r'([\p{Space_Separator}\t]*)#[^\r\n]*' )
+_syntax_space_or_comment = re.compile( r'[\p{Space_Separator}\t#]' )
+_syntax_line_or_comment = re.compile( r'[\r\n#]' )
 
 def promote_value( value : str ) -> Union[str,float,bool,None]:
 	# TODO: have specific conversions allowed
@@ -72,7 +75,7 @@ def _parse_inline_value( src : Source ) -> Optional[EntryType]:
 	
 def _parse_line_value( src : Source, indent : str ) -> EntryType:
 	ivalue = _parse_inline_value( src )
-	line_value = src.parse_string( '\n' ).strip()
+	line_value = src.parse_string_to( re = _syntax_line_or_comment ).strip()
 	
 	if not ivalue is None:
 		if line_value != '':
@@ -80,7 +83,7 @@ def _parse_line_value( src : Source, indent : str ) -> EntryType:
 		return ivalue
 		
 	if line_value == '':
-		src.skip_empty_lines()
+		_skip_empty_lines(src)
 		(match_indent, next_indent) = src.match_indent(indent)
 		if not match_indent and len(next_indent) > len(indent):
 			return _parse_object(src, next_indent)
@@ -93,7 +96,7 @@ def _parse_space_value( src : Source, terminal : Optional[str] ) -> EntryType:
 	if not ivalue is None:
 		return ivalue
 		
-	value = src.parse_string( terminal, end_on_space = True, consume_terminal = False )
+	value = src.parse_string_to( char = terminal, re = _syntax_space_or_comment, consume_terminal = False )
 	return promote_value( value )
 	
 def _parse_inline_list( src : Source, terminal : Optional[str] ) -> ListType:
@@ -117,13 +120,20 @@ def _parse_inline_list( src : Source, terminal : Optional[str] ) -> ListType:
 		
 	return ret_list
 	
+def _skip_empty_lines( src : Source ) -> None:
+	while True:
+		src.skip_empty_lines()
+		if src.match( _syntax_comment ):
+			continue
+		break
+	
 def _parse_object( src : Source, indent : str ) -> EntryType:
 	ret : Union[ObjectType,ListType] = {}
 	ret_list : ListType = []
 	is_array = False
 	
 	while True:
-		src.skip_empty_lines()
+		_skip_empty_lines(src)
 		if src.is_at_end():
 			break
 			

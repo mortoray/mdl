@@ -160,18 +160,46 @@ class Source(object):
 			
 		return text
 		
-	def parse_string( self, close_char : Optional[str], *, end_on_space : bool = False, consume_terminal : bool = True ) -> str:
+	def parse_string( self, close_char : str ) -> str:
 		text = ''
 		
 		while not self.is_at_end():
-			c = self.peek_char()
-			if ( (end_on_space and (c == '\r' or c == '\n' or c == ' ' or c== '\t')) or # TODO: Unicode space?
-				c == close_char):
-				if consume_terminal:
-					self.next_char()
-				break
-					
 			c = self.next_char()
+			if c == '\\':
+				c = self.next_char()
+				has = True
+			elif c == close_char:
+				break
+			
+			text += c
+				
+		return text
+
+	def parse_string_to( self, *, 
+		char : Optional[str] = None, consume_terminal : bool = False,
+		re = None,
+		) -> str:
+		text = ''
+		
+		while not self.is_at_end():
+			if consume_terminal:
+				if re is not None:
+					if self.match(re):
+						break
+				c = self.next_char()
+				if c == char:
+					break
+					
+			else:
+				if re is not None:
+					if self.peek_match(re):
+						break
+				c = self.peek_char()
+				if c == char:
+					break
+					
+				c = self.next_char()
+				
 			if c == '\\':
 				c = self.next_char()
 				has = True
@@ -179,7 +207,7 @@ class Source(object):
 			text += c
 				
 		return text
-	
+		
 	
 	@property
 	def location(self) -> SourceLocation:
