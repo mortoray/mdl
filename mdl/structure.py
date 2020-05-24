@@ -21,8 +21,8 @@ ListType = List[EntryType]
 def structure_parse( data : str, location : Optional[SourceLocation] = None ) -> ObjectType:
 	return _parse_source( Source.with_text( data, location ) )
 	
-#def structure_parse_list( data : str, location : Optiona[SourceLocation] = None ) -> ListType:
-#	obj = _parse_object( src, '' )
+def structure_parse_list( data : str, location : Optiona[SourceLocation] = None ) -> ListType:
+	return _parse_inline_list( Source.with_text( data, location ) )
 
 def structure_load( filename : str ) -> ObjectType:
 	return _parse_source( Source.with_filename( filename ) )
@@ -99,7 +99,7 @@ def _parse_space_value( src : Source, terminal : Optional[str] ) -> EntryType:
 	value = src.parse_string_to( char = terminal, re = _syntax_space_or_comment, consume_terminal = False )
 	return promote_value( value )
 	
-def _parse_inline_list( src : Source, terminal : Optional[str] ) -> ListType:
+def _parse_inline_list( src : Source, terminal : Optional[str] = None ) -> ListType:
 	ret_list : ListType = []
 	
 	while True:
