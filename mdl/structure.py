@@ -40,6 +40,12 @@ _syntax_comment = re.compile( r'([\p{Space_Separator}\t\s]*)#[^\r\n]*' )
 _syntax_space_or_comment = re.compile( r'[\p{Space_Separator}\t#\s]' )
 _syntax_line_or_comment = re.compile( r'[\r\n#]' )
 
+
+class CallList(list):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		
+		
 def promote_value( value : str ) -> Union[str,float,bool,None]:
 	# TODO: have specific conversions allowed
 	try:
@@ -71,6 +77,10 @@ def _parse_inline_value( src : Source ) -> Optional[EntryType]:
 	if next_char == '[':
 		src.next_char()
 		return _parse_inline_list( src, ']' )
+		
+	if next_char == '(':
+		src.next_char()
+		return CallList(_parse_inline_list( src, ')' ))
 		
 	if next_char == '{':
 		src.next_char()
@@ -132,8 +142,6 @@ def _parse_inline_list( src : Source, terminal : Optional[str] = None, end_on_li
 			
 		value = _parse_space_value( src, terminal )
 		ret_list.append(value)
-		
-		
 	return ret_list
 	
 	
