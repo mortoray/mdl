@@ -21,7 +21,7 @@ ListType = List[EntryType]
 def structure_parse( data : str, location : Optional[SourceLocation] = None ) -> ObjectType:
 	return _parse_source( Source.with_text( data, location ) )
 	
-def structure_parse_list( data : str, location : Optiona[SourceLocation] = None ) -> ListType:
+def structure_parse_list( data : str, location : Optional[SourceLocation] = None ) -> ListType:
 	return _parse_inline_list( Source.with_text( data, location ) )
 
 def structure_load( filename : str ) -> ObjectType:
@@ -35,9 +35,9 @@ def _parse_source( src : Source ) -> ObjectType:
 	return obj
 
 	
-_syntax_name = re.compile( r'([\p{L}\p{N}-_.@]+):' )
-_syntax_comment = re.compile( r'([\p{Space_Separator}\t]*)#[^\r\n]*' )
-_syntax_space_or_comment = re.compile( r'[\p{Space_Separator}\t#]' )
+_syntax_name = re.compile( r'([\p{L}\p{N}-_.@]+)\s*([:=])' )
+_syntax_comment = re.compile( r'([\p{Space_Separator}\t\s]*)#[^\r\n]*' )
+_syntax_space_or_comment = re.compile( r'[\p{Space_Separator}\t#\s]' )
 _syntax_line_or_comment = re.compile( r'[\r\n#]' )
 
 def promote_value( value : str ) -> Union[str,float,bool,None]:
@@ -71,9 +71,15 @@ def _parse_inline_value( src : Source ) -> Optional[EntryType]:
 	if next_char == '[':
 		src.next_char()
 		return _parse_inline_list( src, ']' )
+		
+	if next_char == '{':
+		src.next_char()
+		return _parse_inline_map( src, '}' )
+		
 	return None
 	
-def _parse_line_value( src : Source, indent : str ) -> EntryType:
+	
+def _parse_line_value( src : Source, indent : Optional[str] = None ) -> EntryType:
 	ivalue = _parse_inline_value( src )
 	line_value = src.parse_string_to( re = _syntax_line_or_comment ).strip()
 	
@@ -82,6 +88,8 @@ def _parse_line_value( src : Source, indent : str ) -> EntryType:
 			src.fail( 'trailing-line-value' )
 		return ivalue
 		
+	if indent is None:
+		raise Exception("no-multiline-allowed-here")
 	if line_value == '':
 		_skip_empty_lines(src)
 		(match_indent, next_indent) = src.match_indent(indent)
@@ -91,7 +99,8 @@ def _parse_line_value( src : Source, indent : str ) -> EntryType:
 		
 	return promote_value(line_value)
 
-def _parse_space_value( src : Source, terminal : Optional[str] ) -> EntryType:
+	
+def _parse_space_value( src : Source, terminal : Optional[str] = None ) -> EntryType:
 	ivalue = _parse_inline_value( src )
 	if not ivalue is None:
 		return ivalue
@@ -99,11 +108,15 @@ def _parse_space_value( src : Source, terminal : Optional[str] ) -> EntryType:
 	value = src.parse_string_to( char = terminal, re = _syntax_space_or_comment, consume_terminal = False )
 	return promote_value( value )
 	
-def _parse_inline_list( src : Source, terminal : Optional[str] = None ) -> ListType:
+	
+def _parse_inline_list( src : Source, terminal : Optional[str] = None, end_on_line : bool = False ) -> ListType:
 	ret_list : ListType = []
 	
 	while True:
-		src.skip_space()
+		if end_on_line:
+			src.skip_nonline_space()
+		else:
+			src.skip_space()
 		if src.is_at_end():
 			if terminal is None:
 				break
@@ -114,11 +127,36 @@ def _parse_inline_list( src : Source, terminal : Optional[str] = None ) -> ListT
 			src.next_char()
 			break
 			
+		if end_on_line and next_char in ['\r','\n']:
+			break
+			
 		value = _parse_space_value( src, terminal )
 		ret_list.append(value)
 		
 		
 	return ret_list
+	
+	
+def _parse_inline_map( src : Source, terminal : Optional[str] = None ) -> ObjectType:
+	ret : ObjectType = {}
+	
+	while True:
+		src.skip_space()
+		if src.is_at_end():
+			if terminal is None:
+				break
+			src.fail( 'incomplete-inline-set' )
+			
+		next_char = src.peek_char()
+		if next_char == terminal:
+			src.next_char()
+			break
+			
+		name, value = _parse_named(src, terminal = '}')
+		ret[name] = value
+			
+		
+	return ret
 	
 def _skip_empty_lines( src : Source ) -> None:
 	while True:
@@ -128,8 +166,9 @@ def _skip_empty_lines( src : Source ) -> None:
 		break
 	
 def _parse_object( src : Source, indent : str ) -> EntryType:
-	ret : Union[ObjectType,ListType] = {}
+	ret_obj : ObjectType = {}
 	ret_list : ListType = []
+	ret : Union[ObjectType,ListType] = ret_obj
 	is_array = False
 	
 	while True:
@@ -157,18 +196,33 @@ def _parse_object( src : Source, indent : str ) -> EntryType:
 			raise Exception('mixing-non-array-item')
 			
 		else:
-			name_m = src.match( _syntax_name )
-			if name_m is None:
-				src.fail('expecting-a-name')
-			name = name_m.group(1)
-	
-			src.skip_nonline_space()
-			value = _parse_line_value(src, indent)
-			ret[name] = value
+			name, value = _parse_named(src, indent)
+			ret_obj[name] = value
 		
 	return ret
 
 	
+def _parse_named( src : Source, indent : Optional[str] = None, terminal : Optional[str] = None ) -> Tuple[str, EntryType]:
+	name_m = src.match( _syntax_name )
+	if name_m is None:
+		src.fail('expecting-a-name')
+	name = name_m.group(1)
+	op = name_m.group(2)
+
+	src.skip_nonline_space()
+	if op == ':':
+		if indent is not None:
+			value = _parse_line_value(src, indent)
+		else:
+			value = _parse_space_value(src, terminal)
+	elif op == '=':
+		value = _parse_inline_list(src, end_on_line = True)
+	else:
+		raise Exception('unreachable')
+		
+	return (name, value)
+	
+
 def dump_structure( obj : EntryType, indent : str = '', *, _is_initial = True ) -> str:
 	text = ''
 	if isinstance( obj, dict ):

@@ -1,0 +1,5 @@
+a:
+	- {call: me you: too}
+	- normall
+deeper: {something: here is: { deep: inside } }
+array: [{one: two}]

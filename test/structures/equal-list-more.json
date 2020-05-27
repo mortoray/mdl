@@ -1,0 +1,26 @@
+{
+	"deep": {
+		"four": "normal string here",
+		"one": [
+			1
+		],
+		"two": [
+			"two",
+			"three"
+		]
+	},
+	"expr-list": [
+		"a",
+		"b",
+		"c",
+		[
+			1,
+			2,
+			3
+		]
+	],
+	"two": [
+		"2 3",
+		null
+	]
+}
