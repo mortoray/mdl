@@ -1,0 +1,10 @@
+actions: [
+	(
+		"action",
+		"one",
+	),
+	(
+		"two",
+		"here",
+	),
+]

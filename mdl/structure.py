@@ -192,13 +192,16 @@ def _parse_object( src : Source, indent : str ) -> EntryType:
 				raise Exception('invalid-syntax')
 			
 		next_char = src.peek_char()
-		if next_char == '-':
+		if next_char in ['-','=']:
 			src.next_char()
 			if not is_array:
 				ret = ret_list
 				is_array = True
 			src.skip_nonline_space()
-			ret_list.append( _parse_line_value(src, indent) )
+			if next_char == '-':
+				ret_list.append( _parse_line_value(src, indent) )
+			else:
+				ret_list.append( CallList(_parse_inline_list(src, end_on_line=True)) )
 				
 		elif is_array:
 			raise Exception('mixing-non-array-item')
@@ -224,7 +227,7 @@ def _parse_named( src : Source, indent : Optional[str] = None, terminal : Option
 		else:
 			value = _parse_space_value(src, terminal)
 	elif op == '=':
-		value = _parse_inline_list(src, end_on_line = True)
+		value = CallList(_parse_inline_list(src, end_on_line = True))
 	else:
 		raise Exception('unreachable')
 		
@@ -243,15 +246,31 @@ def dump_structure( obj : EntryType, indent : str = '', *, _is_initial = True ) 
 			text += dump_structure( value )
 			text += '\n'
 			
-	elif isinstance( obj, list ):
-		text += '[\n'
+	elif isinstance( obj, CallList ):
+		text += f'{indent}(\n'
 		for et in obj:
 			text += dump_structure( et, indent  + '\t' )
 			text += ',\n' 
-		text += '{indent}]' 
+		text += f'{indent})' 
+	
+	elif isinstance( obj, list ):
+		text += f'{indent}[\n'
+		for et in obj:
+			text += dump_structure( et, indent  + '\t' )
+			text += ',\n' 
+		text += f'{indent}]' 
 		
 	elif isinstance( obj, str ):
-		text += f'"{obj}"' #TODO: escape
+		text += f'{indent}"{obj}"' #TODO: escape
+		
+	elif isinstance( obj, bool ):
+		text += indent + ('true' if obj else 'false')
+		
+	elif isinstance( obj, float ) or isinstance( obj, int ):
+		text += f'{indent}{obj}'
+		
+	elif obj is None:
+		text += f'{indent}null'
 		
 	else:
 		raise Exception( "Invalid structure type", obj )

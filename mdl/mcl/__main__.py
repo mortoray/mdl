@@ -14,6 +14,8 @@ def main() -> None:
 	cli_args.add_argument( 'mcl_file', metavar = 'input-file.mcl', nargs = '?', help='Input document' )
 	cli_args.add_argument( '--write-json', nargs='?', metavar='filename',
 		help='Write the structure to a JSON file' )
+	cli_args.add_argument( '--dump', nargs='?', metavar='filename',
+		help='Write debug structure toa  file' )
 		
 	args = cli_args.parse_args()
 	
@@ -26,5 +28,11 @@ def main() -> None:
 			json = structure.structure_format_json( obj, pretty = True )
 			with open( args.write_json, 'w', encoding='utf-8' ) as out_file:
 				out_file.write( json )
+				
+		if args.dump:
+			print( f'Writing Dump {args.dump}' )
+			dump = structure.dump_structure( obj )
+			with open( args.dump, 'w', encoding='utf-8' ) as out_file:
+				out_file.write( dump )
 	
 main()

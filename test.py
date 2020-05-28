@@ -78,16 +78,25 @@ for fname in fs.find( 'test/docs', name_regex = r".*\.mdl" ):
 for fname in fs.find( 'test/structures', name_regex = r".*\.mcl" ):
 	print( fname, end=' ')
 	base = os.path.splitext( fname )[0]
+	obj = structure.structure_load( fname )
 	
 	json_name = base + '.json'
 	if os.path.exists( json_name ):
-		obj = structure.structure_load( fname )
 		json = structure.structure_format_json( obj, pretty = True )
 		
 		with open( json_name, 'r', encoding = 'utf-8' ) as check:
 			check_json = check.read()
 			
 		status( 'JSON', json == check_json )
+		
+	dump_name = base + '.dump'
+	if os.path.exists( dump_name ):
+		dump = structure.dump_structure( obj )
+		
+		with open( dump_name, 'r', encoding = 'utf-8' ) as check:
+			check_dump = check.read()
+			
+		status( 'Dump', dump == check_dump )
 		
 	print()
 	
