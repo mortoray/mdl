@@ -45,6 +45,10 @@ class CallList(list):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		
+class ArrayList(list):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+
 		
 def promote_value( value : str ) -> Union[str,float,bool,None]:
 	# TODO: have specific conversions allowed
@@ -76,7 +80,7 @@ def _parse_inline_value( src : Source ) -> Optional[EntryType]:
 		
 	if next_char == '[':
 		src.next_char()
-		return _parse_inline_list( src, ']' )
+		return ArrayList(_parse_inline_list( src, ']' ))
 		
 	if next_char == '(':
 		src.next_char()
@@ -175,7 +179,7 @@ def _skip_empty_lines( src : Source ) -> None:
 	
 def _parse_object( src : Source, indent : str ) -> EntryType:
 	ret_obj : ObjectType = {}
-	ret_list : ListType = []
+	ret_list : ListType = ArrayList([])
 	ret : Union[ObjectType,ListType] = ret_obj
 	is_array = False
 	
@@ -253,12 +257,15 @@ def dump_structure( obj : EntryType, indent : str = '', *, _is_initial = True ) 
 			text += ',\n' 
 		text += f'{indent})' 
 	
-	elif isinstance( obj, list ):
+	elif isinstance( obj, ArrayList ):
 		text += f'{indent}[\n'
 		for et in obj:
 			text += dump_structure( et, indent  + '\t' )
 			text += ',\n' 
 		text += f'{indent}]' 
+		
+	elif isinstance( obj, list ):
+		raise Exception( "Unexpect list type", obj )
 		
 	elif isinstance( obj, str ):
 		text += f'{indent}"{obj}"' #TODO: escape
