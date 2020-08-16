@@ -177,6 +177,8 @@ def _convert_block( ctx, nodes_iter, prev_in_section ):
 			
 		elif node.class_ in embed_map:
 			args = node.get_args()
+			if len(args) != 1:
+				raise Exception( f'{node.class_}-expect-1-arg', node.location.translate() )
 			assert len(args) == 1
 			para = doc_tree.Embed( embed_map[node.class_], args[0] )
 			

@@ -344,6 +344,7 @@ class TreeParser:
 		bits : List[Node] = []
 		text = ''
 		end_char = terminal if terminal is not None else '\n'
+		start_line = src.location
 		
 		def end_text():
 			nonlocal text
@@ -435,7 +436,7 @@ class TreeParser:
 			text += self._parse_char( src )
 				
 		if terminal is not None and not has_end_char:
-			raise Exception( "unterminated-line-feature", end_char )
+			raise src.fail_from(start_line, "unterminated-line-feature", end_char )
 			
 		end_text()
 		end_bits()

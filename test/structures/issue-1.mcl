@@ -1,0 +1,3 @@
+cash:
+	visible = and .open (not-has cash)
+	action = acquire cash

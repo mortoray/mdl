@@ -213,10 +213,12 @@ class Source(object):
 	def location(self) -> SourceLocation:
 		return SourceLocation(self, self._at)
 		
-	def fail(self, message):
-		loc = self.location.translate()
-		msg = f'{loc[0]}:{loc[1]},{loc[2]}:{message}'
+	def fail(self, *message):
+		self.fail_from(self.location, *message)
+		
+	def fail_from(self, location: SourceLocation, *message):
+		loc = location.translate()
+		msg = f'{loc[0]}:{loc[1]},{loc[2]}:{":".join(message)}'
 		print( msg, file=sys.stderr )
 		raise Exception(msg)
-		
-
+	

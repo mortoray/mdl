@@ -1,6 +1,7 @@
 atomicwrites==1.3.0
 attrs==19.2.0
 beautifulsoup4==4.7.1
+jsx-lexer==0.0.8
 more-itertools==7.2.0
 mypy==0.730
 mypy-extensions==0.4.1

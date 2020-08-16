@@ -35,7 +35,7 @@ def _parse_source( src : Source ) -> ObjectType:
 	return obj
 
 	
-_syntax_name = re.compile( r'([\p{L}\p{N}-_.@]+)\s*([:=])' )
+_syntax_name = re.compile( r'([\p{L}\p{N}-_.@$]+)\s*([:=])' )
 _syntax_comment = re.compile( r'([\p{Space_Separator}\t\s]*)#[^\r\n]*' )
 _syntax_space_or_comment = re.compile( r'[\p{Space_Separator}\t#\s]' )
 _syntax_line_or_comment = re.compile( r'[\r\n#]' )
@@ -247,20 +247,21 @@ def dump_structure( obj : EntryType, indent : str = '', *, _is_initial = True ) 
 			
 		for key, value in obj.items():
 			text += f'{indent}{key}: '
-			text += dump_structure( value )
+			text += dump_structure( value, indent, _is_initial = False )
 			text += '\n'
 			
 	elif isinstance( obj, CallList ):
-		text += f'{indent}(\n'
+		text += f'(\n'
 		for et in obj:
-			text += dump_structure( et, indent  + '\t' )
+			text += indent;
+			text += dump_structure( et, indent  + '\t', _is_initial = False )
 			text += ',\n' 
 		text += f'{indent})' 
 	
 	elif isinstance( obj, ArrayList ):
 		text += f'{indent}[\n'
 		for et in obj:
-			text += dump_structure( et, indent  + '\t' )
+			text += dump_structure( et, indent  + '\t', _is_initial = False )
 			text += ',\n' 
 		text += f'{indent}]' 
 		
@@ -268,16 +269,16 @@ def dump_structure( obj : EntryType, indent : str = '', *, _is_initial = True ) 
 		raise Exception( "Unexpect list type", obj )
 		
 	elif isinstance( obj, str ):
-		text += f'{indent}"{obj}"' #TODO: escape
+		text += f'"{obj}"' #TODO: escape
 		
 	elif isinstance( obj, bool ):
-		text += indent + ('true' if obj else 'false')
+		text += ('true' if obj else 'false')
 		
 	elif isinstance( obj, float ) or isinstance( obj, int ):
-		text += f'{indent}{obj}'
+		text += f'{obj}'
 		
 	elif obj is None:
-		text += f'{indent}null'
+		text += f'null'
 		
 	else:
 		raise Exception( "Invalid structure type", obj )
