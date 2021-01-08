@@ -139,6 +139,9 @@ def _parse_inline_list( src : Source, terminal : Optional[str] = None, end_on_li
 			src.skip_nonline_space()
 		else:
 			src.skip_space()
+			if src.match( _syntax_comment ):
+				continue
+				
 		if src.is_at_end():
 			if terminal is None:
 				break
@@ -248,6 +251,8 @@ def _parse_named( src : Source, indent : Optional[str] = None, terminal : Option
 
 def dump_structure( obj : EntryType, indent : str = '', *, _is_initial = True ) -> str:
 	text = ''
+	next_indent = indent + '\t'
+	
 	if isinstance( obj, dict ):
 		if not _is_initial:
 			text += '\n' 
@@ -261,15 +266,16 @@ def dump_structure( obj : EntryType, indent : str = '', *, _is_initial = True ) 
 	elif isinstance( obj, CallList ):
 		text += f'(\n'
 		for et in obj:
-			text += indent;
-			text += dump_structure( et, indent  + '\t', _is_initial = False )
+			text += next_indent;
+			text += dump_structure( et, next_indent, _is_initial = False )
 			text += ',\n' 
 		text += f'{indent})' 
 	
 	elif isinstance( obj, ArrayList ):
-		text += f'{indent}[\n'
+		text += f'[\n'
 		for et in obj:
-			text += dump_structure( et, indent  + '\t', _is_initial = False )
+			text += next_indent
+			text += dump_structure( et, next_indent, _is_initial = False )
 			text += ',\n' 
 		text += f'{indent}]' 
 		

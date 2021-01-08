@@ -12,12 +12,13 @@ two: (
 	"2 3",
 	null,
 )
-deep: one: (
-	1,
-)
-two: (
-	"two",
-	"three",
-)
-four: "normal string here"
+deep: 
+	one: (
+		1,
+	)
+	two: (
+		"two",
+		"three",
+	)
+	four: "normal string here"
 

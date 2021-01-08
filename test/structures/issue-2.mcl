@@ -1,0 +1,4 @@
+.card-text = array str [
+	"A" # Comment
+	"B" # Comment
+]

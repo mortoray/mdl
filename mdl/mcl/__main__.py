@@ -15,7 +15,7 @@ def main() -> None:
 	cli_args.add_argument( '--write-json', nargs='?', metavar='filename',
 		help='Write the structure to a JSON file' )
 	cli_args.add_argument( '--dump', nargs='?', metavar='filename',
-		help='Write debug structure toa  file' )
+		help='Write debug structure to a file' )
 		
 	args = cli_args.parse_args()
 	

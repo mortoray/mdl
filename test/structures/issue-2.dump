@@ -1,0 +1,8 @@
+.card-text: (
+	"array",
+	"str",
+	[
+		"A",
+		"B",
+	],
+)

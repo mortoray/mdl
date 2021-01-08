@@ -178,7 +178,7 @@ class Source(object):
 	def parse_string_to( self, *, 
 		char : Optional[str] = None, consume_terminal : bool = False,
 		re = None,
-		) -> str:
+	) -> str:
 		text = ''
 		
 		while not self.is_at_end():
