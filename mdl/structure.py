@@ -41,15 +41,23 @@ _syntax_space_or_comment = re.compile( r'[\p{Space_Separator}\t#\s]' )
 _syntax_line_or_comment = re.compile( r'[\r\n#]' )
 
 
+# (item0 ... itemN)
+# = item0 ... itemN
 class CallList(list):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		
+# [item0 ... itemN]
 class ArrayList(list):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
-
-		
+	
+# "string"
+class QuotedString(str):
+	def __new__(cls, *args, **kw):
+		return str.__new__(cls, *args, **kw)
+	
+	
 def promote_value( value : str ) -> Union[str,float,bool,None]:
 	# TODO: have specific conversions allowed
 	try:
@@ -76,7 +84,7 @@ def _parse_inline_value( src : Source ) -> Optional[EntryType]:
 	next_char = src.peek_char()
 	if next_char == '\"':
 		src.next_char()
-		return src.parse_string( next_char )
+		return QuotedString(src.parse_string( next_char ))
 		
 	if next_char == '[':
 		src.next_char()
