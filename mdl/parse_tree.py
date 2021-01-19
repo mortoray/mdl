@@ -22,17 +22,22 @@ class NodeType(Enum):
 	
 	
 class Annotation(object):
-	def __init__(self, class_, node = None):
+	def __init__(self, class_: str, *, args: List[str] = [], node = None):
 		self._class_ = class_
 		self._node = node
+		self._args = args
 		
 	@property
-	def class_( self ):
+	def class_( self ) -> str:
 		return self._class_
 		
 	@property
 	def node( self ):
 		return self._node
+		
+	@property
+	def args( self ) -> List[str]:
+		return self._args
 		
 		
 class Node(object):

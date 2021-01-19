@@ -118,13 +118,18 @@ class Paragraph(ElementContainer, BlockNode):
 Leaf types may only inherit from Base node types. This prevents collision on simple visitors, as well as keeping the "is-a" relationships clean.
 """
 class Block(BlockContainer):
-	def __init__(self, class_ : BlockClass, subs = []):
+	def __init__(self, class_ : BlockClass, subs = [], *, args = []):
 		super().__init__( subs )
 		self._class_ = class_
+		self._args = args
 		
 	@property
 	def class_(self) -> BlockClass:
 		return self._class_
+		
+	@property
+	def args(self) -> List:
+		return self._args
 		
 		
 class BlockClass(object):
@@ -138,6 +143,7 @@ block_quote = BlockClass('quote')
 block_blurb = BlockClass('blurb')
 block_aside = BlockClass('aside')
 block_promote = BlockClass('promote')
+block_custom = BlockClass('custom')
 		
 		
 class Text(Element):

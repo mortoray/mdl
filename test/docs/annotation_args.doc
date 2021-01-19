@@ -1,0 +1,9 @@
+<Section:0>
+	<Paragraph>
+		A normal paragraph.
+	<Block:custom args=(one)>
+		<Paragraph>
+			Arguments with "one"
+	<Block:custom args=(two,three)>
+		<Paragraph>
+			Arguments with "two", "three"

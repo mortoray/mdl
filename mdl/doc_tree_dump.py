@@ -100,7 +100,10 @@ class DumpVisitor:
 			raise Exception( "Unsupported type", node )
 	
 	def get_block(self, node) -> None:
-		self.output.write_line( f"<Block:{node.class_.name}>" )
+		args = ','.join(node.args)
+		if len(args) > 0:
+			args = f' args=({args})'
+		self.output.write_line( f"<Block:{node.class_.name}{args}>" )
 		
 	def get_paragraph(self, node) -> None:
 		self.output.write_line( "<Paragraph>" )

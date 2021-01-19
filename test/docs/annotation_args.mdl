@@ -1,0 +1,7 @@
+A normal paragraph.
+
+@Custom(one)
+Arguments with "one"
+
+@Custom( two , three )
+Arguments with "two", "three"

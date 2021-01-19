@@ -98,12 +98,16 @@ class FeatureParse():
 	
 
 class BLMAnnotation(BlockLevelMatcher):
-	pattern = re.compile( r'@(\p{L}+)' )
+	pattern = re.compile( r'@(\p{L}+)(\(([^\)]*)\))?' ) # cheap args parsing for now
 	def get_match_regex( self ) -> re.Pattern:
 		return self.pattern
 		
 	def process( self, builder : BlockLevelBuilder, match : re.Match ):
-		builder.append_annotation( Annotation( match.group(1) ) )
+		args_group = match.group(3)
+		args: List[str] = []
+		if args_group is not None:
+			args = [x.strip() for x in args_group.split(',')]
+		builder.append_annotation( Annotation( match.group(1), args=args ) )
 		
 
 class BLMLine(BlockLevelMatcher):
@@ -128,11 +132,11 @@ class BLMComment(BlockLevelMatcher):
 	def process( self, builder : BlockLevelBuilder, match : re.Match ):
 		if match.group(1) == '//':
 			para = builder.parse_para()
-			builder.append_annotation( Annotation( 'comment', para ) )
+			builder.append_annotation( Annotation( 'comment', node=para ) )
 		else:
 			line = Node(NodeType.block, builder.location)
 			line.add_subs( builder.parse_line() )
-			builder.append_annotation( Annotation( 'comment', line) )
+			builder.append_annotation( Annotation( 'comment', node=line) )
 			
 
 class BLMSeparator(BlockLevelMatcher):

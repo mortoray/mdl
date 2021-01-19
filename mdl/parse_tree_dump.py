@@ -22,6 +22,10 @@ class _dumper:
 		if node.has_annotations():
 			for anno in node.iter_annotations():
 				text += '\n{}\t@{}'.format( indent, self._alt(anno.class_) )
+				if len(anno.args) > 0:
+					text += '('
+					text += ','.join(anno.args)
+					text += ')'
 				if anno.node != None:
 					text += '\n' + self.get( anno.node, indent + '\t\t' )
 		if node.has_attr():
