@@ -1,0 +1,8 @@
+angle-triangle: (
+	"float",
+	-0.083333,
+)
+angle-eraser: (
+	"float",
+	0.041667,
+)

@@ -137,11 +137,13 @@ def _parse_inline_list( src : Source, terminal : Optional[str] = None, end_on_li
 	while True:
 		if end_on_line:
 			src.skip_nonline_space()
+			if src.match( _syntax_comment ):
+				break
 		else:
 			src.skip_space()
 			if src.match( _syntax_comment ):
 				continue
-				
+			
 		if src.is_at_end():
 			if terminal is None:
 				break
