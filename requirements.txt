@@ -11,7 +11,7 @@ py==1.8.0
 Pygments==2.4.2
 pyparsing==2.4.2
 pytest==5.2.1
-PyYAML==5.1.1
+PyYAML==5.4
 regex==2019.6.8
 shelljob==0.5.6
 six==1.12.0
