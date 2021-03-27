@@ -209,8 +209,8 @@ class BLMRaw(BlockLevelMatcher):
 		
 
 class BLMMatter(BlockLevelMatcher):
-	pattern_open = re.compile( r'(^\+\+\+)', re.MULTILINE ) 
-	pattern_end = re.compile( r'(^\+\+\+$)', re.MULTILINE )
+	pattern_open = re.compile( r'(^\+\+\+\s*)', re.MULTILINE ) 
+	pattern_end = re.compile( r'(^\+\+\+\s*$)', re.MULTILINE )
 	def get_match_regex( self ) -> re.Pattern:
 		return self.pattern_open
 	

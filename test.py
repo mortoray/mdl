@@ -1,10 +1,12 @@
 """
 	Test driver for document tests.
 """
-import os, yaml
+import os, yaml, sys
 from mdl import tree_parser, parse_to_doc, format_html, doc_process, document, parse_tree_dump, structure
 import mdl
 from shelljob import fs #type: ignore
+
+bad_count = 0
 
 def passed(text : str) -> str:
 	return '\x1b[32m{} ✔ \x1b[m'.format(text)
@@ -13,6 +15,9 @@ def failed(text : str) -> str:
 	return '\x1b[31m{} ✗\x1b[m'.format(text)
 
 def status(text, okay):
+	global bad_count
+	if not okay:
+		bad_count += 1
 	print( passed(text) if okay else failed(text), end=' ' )
 	
 for fname in fs.find( 'test/docs', name_regex = r".*\.mdl" ):
@@ -99,4 +104,8 @@ for fname in fs.find( 'test/structures', name_regex = r".*\.mcl" ):
 		status( 'Dump', dump == check_dump )
 		
 	print()
+	
+if bad_count > 0:
+	print(failed(f"{bad_count} errors"))
+	sys.exit(1)
 	
