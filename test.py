@@ -1,7 +1,7 @@
 """
 	Test driver for document tests.
 """
-import os, yaml, sys
+import os, sys
 from mdl import tree_parser, parse_to_doc, format_html, doc_process, document, parse_tree_dump, structure
 import mdl
 from shelljob import fs #type: ignore
@@ -55,7 +55,7 @@ for fname in fs.find( 'test/docs', name_regex = r".*\.mdl" ):
 		
 	yaml_name = base + '.yaml'
 	if os.path.exists( yaml_name ):
-		test = yaml.safe_load( open( yaml_name ).read() )
+		test = structure.structure_load( yaml_name )
 		if 'fail-parse' in test:
 			try:
 				_ = tp.parse_file( fname )

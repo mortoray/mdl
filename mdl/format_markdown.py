@@ -219,7 +219,7 @@ class MarkdownWriter(render.Writer):
 		
 	def _write_list_item( self, node : doc_tree.ListItem ) -> bool:
 		self.stack[-1].is_flow = True
-		self.output.section( '-', '\n' )
+		self.output.section( '- ', '\n' )
 		return True
 		
 	def _write_embed( self, node : doc_tree.Embed ) -> bool:
