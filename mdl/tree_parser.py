@@ -62,7 +62,7 @@ class FeatureParse():
 		
 	open_pattern : str
 	close_char : str
-	content : Type
+	content : ContentType
 	
 	@classmethod
 	def open_close(class_, open_pattern, close_char ):
@@ -447,6 +447,7 @@ class TreeParser:
 		return bits
 
 	def _parse_raw_escape_to( self, src, close_char ):
+		start_line = src.location
 		start = src.position
 		text = ''
 		
@@ -463,7 +464,7 @@ class TreeParser:
 				
 			text += c
 			
-		raise Exception( f"{src.map_position(start)} Unclosed raw text feature {close_char}" )
+		raise src.fail_from(start_line, "unclosed-raw-text-feature", close_char )
 
 
 	"""	
@@ -527,4 +528,4 @@ class TreeParser:
 		
 		return result
 	
-__all__ = [ 'TreeParser' ]
+__all__ = [ 'TreeParser', 'Node', 'NodeType' ]

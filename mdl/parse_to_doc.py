@@ -52,10 +52,10 @@ def convert( node : tree_parser.Node ) -> doc_tree.Section:
 	return root
 	
 	
-def _convert_blocks( ctx, nodes_iter ):
-	out = []
+def _convert_blocks( ctx: _ConvertContext, nodes_iter: _NodeIterator ) -> List[doc_tree.BlockNode]:
+	out: List[doc_tree.BlockNode] = []
 	
-	section_stack = []
+	section_stack: List[doc_tree.Section] = []
 	cur_out = out
 	prev_in_section = None
 	
@@ -105,8 +105,8 @@ def _convert_blocks( ctx, nodes_iter ):
 			
 	return out
 
-def _convert_inlines( ctx, node ):
-	para_subs = []
+def _convert_inlines( ctx: _ConvertContext, node: tree_parser.Node ):
+	para_subs: List[doc_tree.Node] = []
 	nodes_iter = _NodeIterator( node.iter_sub() )
 	while nodes_iter.has_next():
 		para = _convert_inline( ctx, nodes_iter )
@@ -126,12 +126,13 @@ def _as_text( ctx, block : doc_tree.ElementContainer ) -> str:
 		txt += element.text
 	return txt
 	
-def _convert_block( ctx, nodes_iter, prev_in_section ):
-	para = None
+def _convert_block( ctx: _ConvertContext, nodes_iter: _NodeIterator, prev_in_section ):
+	para: Optional[doc_tree.Node] = None
 	
 	while True:
 		node = nodes_iter.next()
 			
+		para_subs: List[doc_tree.BlockNode]
 		if node.type == tree_parser.NodeType.block:
 			para_subs = [ doc_tree.Paragraph( _convert_inlines( ctx, node ) ) ]
 		else:
@@ -148,9 +149,11 @@ def _convert_block( ctx, nodes_iter, prev_in_section ):
 				note_node.add_subs( para_subs[0].iter_sub() )
 			elif isinstance( note_node, doc_tree.Link ):
 				ps = para_subs[0]
-				assert ps.len_sub() == 1 and isinstance( ps.first_sub(), doc_tree.Link )
-				note_node.url = ps.first_sub().url
-				note_node.title = _as_text( ctx, ps.first_sub())
+				assert ps.len_sub() == 1
+				first_sub = ps.first_sub()
+				assert isinstance(first_sub, doc_tree.Link)
+				note_node.url = first_sub.url
+				note_node.title = _as_text( ctx, first_sub)
 			else:
 				raise Exception( "Unexpected note node: " + note_node )
 			
@@ -160,7 +163,8 @@ def _convert_block( ctx, nodes_iter, prev_in_section ):
 		if node.class_ == '----':
 			para = doc_tree.BlockMark( doc_tree.MarkClass.minor_separator )
 		elif node.class_.startswith( '#' ):
-			para = doc_tree.Section( len(node.class_), para_subs  )
+			# TODO: solve type issue
+			para = doc_tree.Section( len(node.class_), para_subs  )  # type:ignore
 		elif node.class_.startswith( '>' ):
 			para = doc_tree.Block( doc_tree.block_quote, para_subs )
 		elif node.class_.startswith( '-' ):
@@ -257,7 +261,7 @@ def _convert_note( ctx, node, nodes_iter ):
 	else:
 		next_node = nodes_iter.next()
 		
-		link = _convert_link( ctx, next_node )
+		link = _convert_link( ctx, node, next_node )
 		return doc_tree.Note(link)
 
 
@@ -269,7 +273,7 @@ def _collapse_text( ctx, node ):
 	return text
 
 
-def _convert_link( ctx, node, nodes_iter ):
+def _convert_link( ctx: _ConvertContext, node: tree_parser.Node, nodes_iter: _NodeIterator ):
 	url_node = nodes_iter.next()
 	if url_node.class_ != '(':
 		raise Exception( "Unexpected node following anchor: " + str(url_node) )

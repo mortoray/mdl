@@ -212,7 +212,8 @@ class MarkdownWriter(render.Writer):
 		if not _is_simple_list( node ):
 			writer = HtmlWriter()
 			writer._write_node( node ) #TODO: private access
-			return "\n" + writer.output.getvalue() + "\n"
+			self.output.section('', "\n" + writer.output.value + "\n")
+			return True
 			
 		self.output.section( '', '\n' )
 		return True

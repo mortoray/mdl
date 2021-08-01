@@ -22,10 +22,10 @@ class NodeType(Enum):
 	
 	
 class Annotation(object):
-	def __init__(self, class_: str, *, args: List[str] = [], node = None):
-		self._class_ = class_
-		self._node = node
-		self._args = args
+	def __init__(self, class_: str, *, args: List[str] = [], node: Optional[Node] = None):
+		self._class_: str = class_
+		self._node: Optional[Node] = node
+		self._args: List[str] = args
 		
 	@property
 	def class_( self ) -> str:
@@ -41,19 +41,19 @@ class Annotation(object):
 		
 		
 class Node(object):
-	def __init__(self, type, loc : SourceLocation):
+	def __init__(self, type: NodeType, loc : SourceLocation):
 		self._sub: List[Node] = []
-		self._text = ''
-		self._type = type
-		self._class_ = ''
-		self._attr = None
-		self._annotations = None
+		self._text: str = ''
+		self._type: NodeType = type
+		self._class_: str = ''
+		self._attr: Optional[List['Node']] = None
+		self._annotations: Optional[List[Annotation]] = None
 		self._args: List[str] = []
 		self._data = None
-		self._loc = loc
+		self._loc: SourceLocation = loc
 		
-	def __str__( self ):
-		return f"{self._type}/{self._class_}:{self._loc and self._loc.translate()} \"{self._text}\""
+	def __str__( self ) -> str:
+		return f"{self._type}/{self._class_}:{self._loc.translate()} \"{self._text}\""
 		
 	def validate_sub( self, sub ):
 		if self._type == NodeType.text:
@@ -65,15 +65,15 @@ class Node(object):
 			
 		assert isinstance(sub, Node)
 		
-	def add_annotations( self, annotations ):
+	def add_annotations( self, annotations: List[Annotation] ):
 		if len(annotations) == 0:
 			return
-		if self._annotations == None:
+		if self._annotations is None:
 			self._annotations = []
 		self._annotations += annotations[:]
 		
-	def get_annotation( self, class_ ):
-		if self._annotations == None:
+	def get_annotation( self, class_: str ):
+		if self._annotations is None:
 			return None
 		for anno in self._annotations:	
 			if anno.class_ == class_:
@@ -156,24 +156,24 @@ class Node(object):
 	def class_( self, value ):
 		self._class_ = value
 		
-	def add_attr( self, node ):
-		if self._attr == None:
+	def add_attr( self, node: 'Node' ):
+		if self._attr is None:
 			self._attr = []
 		self._attr.append(node)
 		
 	def has_attr( self ):
-		return self._attr != None and len(self._attr) > 0
+		return self._attr is not None and len(self._attr) > 0
 		
 	def iter_attr( self ):
-		return iter(self._attr)
+		return iter(self._attr or [])
 		
 	def get_attrs(self):
-		if self._attr == None:
+		if self._attr is None:
 			return []
 		return self._attr
 		
 	def has_annotations( self ):
-		return self._annotations != None and len(self._annotations) > 0
+		return self._annotations is not None and len(self._annotations) > 0
 		
 	def iter_annotations( self ):
-		return iter( self._annotations )
+		return iter( self._annotations or [])

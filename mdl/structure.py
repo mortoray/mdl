@@ -54,8 +54,9 @@ class ArrayList(list):
 	
 # "string"
 class QuotedString(str):
-	def __new__(cls, *args, **kw):
-		return str.__new__(cls, *args, **kw)
+	def __new__(cls, *args, **kw) -> 'QuotedString':
+		# mypy: unclear of error
+		return str.__new__(cls, *args, **kw)  # type:ignore
 	
 	
 def promote_value( value : str ) -> Union[str,float,bool,None]:

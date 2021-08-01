@@ -49,7 +49,9 @@ class HtmlWriter(render.Writer):
 			self.output.block( "head" )
 			if 'title' in doc.meta:
 				self.output.block( "title" )
-				self.output.text( doc.meta['title'] )
+				title = doc.meta['title']
+				assert isinstance(title,str)
+				self.output.text( title )
 				self.output.end_block()
 				
 			self.output.end_block()
@@ -154,6 +156,7 @@ class HtmlWriter(render.Writer):
 		
 	def _write_paragraph( self, node ):
 		parent = self.stack[-1]
+		assert isinstance(parent, doc_tree.NodeContainer)
 		if parent.len_sub() != 1 or not self._is_flow( parent ):
 			self.output.block( 'p' )
 		#else we collapse the paragraph in a flow parent

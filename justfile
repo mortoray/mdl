@@ -1,6 +1,9 @@
-all: check test
+@default:
+	just --list
+	
+all: mypy test
 
-check:
+mypy:
 	python -m mypy *.py mdl/*.py mdl/mcl/*.py
 
 test:
