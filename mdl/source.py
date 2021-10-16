@@ -27,9 +27,9 @@ class SourceLocation(NamedTuple):
 		
 		
 	def line_at(self) -> int:
-		q = self.offset + self.source._base_offset
+		q = min(self.offset + self.source._base_offset, len(self.source._text)-self.source._base_offset)
 		line = 1
-		while q > 0:
+		while q > 1:
 			q -= 1
 			c = self.source._text[q]
 			if c == '\n':
@@ -38,9 +38,9 @@ class SourceLocation(NamedTuple):
 		return line
 	
 	def col_at(self, tab_size = 4) -> int:
-		q = self.offset + self.source._base_offset
+		q = min(self.offset + self.source._base_offset, len(self.source._text)-self.source._base_offset)
 		col = 1
-		while q > 0:
+		while q > 1:
 			q -= 1
 			c = self.source._text[q]
 			if c == '\n':

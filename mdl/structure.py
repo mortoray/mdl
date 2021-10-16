@@ -112,13 +112,13 @@ def _parse_line_value( src : Source, indent : Optional[str] = None ) -> EntryTyp
 		return ivalue
 		
 	if indent is None:
-		raise Exception("no-multiline-allowed-here")
+		src.fail("no-multiline-allowed-here")
 	if line_value == '':
 		_skip_empty_lines(src)
 		(match_indent, next_indent) = src.match_indent(indent)
 		if not match_indent and len(next_indent) > len(indent):
 			return _parse_object(src, next_indent)
-		raise Exception("missing-value")
+		src.fail("missing-value")
 		
 	return promote_value(line_value)
 
