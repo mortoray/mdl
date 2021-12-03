@@ -1,0 +1,18 @@
+{
+	"cmds": [
+		"a",
+		{
+			"out": "on",
+			"time": "with a space, but quotes"
+		},
+		"b",
+		{
+			"good": [
+				1,
+				2,
+				3
+			],
+			"oh": "yeah"
+		}
+	]
+}

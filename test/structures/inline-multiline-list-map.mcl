@@ -1,0 +1,5 @@
+cmds = a {
+	time: "with a space, but quotes"
+	out: on
+} b {oh: yeah good: [1 2 3]}
+
