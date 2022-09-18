@@ -6,6 +6,17 @@ from typing import *
 class _ConvertContext(object):
 	def __init__(self):
 		self.open_notes = {}
+		self.node_stack = []
+		
+	def where_push(self, node: tree_parser.Node):
+		self.node_stack.append(node)
+		
+	def where_pop(self):
+		self.node_stack.pop()
+	
+	def print_where(self):
+		for node in self.node_stack:
+			print(str(node.location.translate()))
 
 """
 An iterator for the nodes that allows for nested iteration and peeking.
@@ -45,9 +56,13 @@ def convert( node : tree_parser.Node ) -> doc_tree.Section:
 	assert node.type == tree_parser.NodeType.container
 	
 	ctx = _ConvertContext()
-	root = doc_tree.Section(0)
-	subs = _convert_blocks( ctx, _NodeIterator(node.iter_sub()) )
-	root.add_subs( subs )
+	try:
+		root = doc_tree.Section(0)
+		subs = _convert_blocks( ctx, _NodeIterator(node.iter_sub()) )
+		root.add_subs( subs )
+	except:
+		ctx.print_where()
+		raise
 	
 	return root
 	
@@ -81,6 +96,7 @@ def _convert_blocks( ctx: _ConvertContext, nodes_iter: _NodeIterator ) -> List[d
 	
 	while nodes_iter.has_next():
 		node = nodes_iter.peek_next()
+		ctx.where_push(node)
 
 		if node.type == tree_parser.NodeType.raw:
 			node = nodes_iter.next()
@@ -102,6 +118,8 @@ def _convert_blocks( ctx: _ConvertContext, nodes_iter: _NodeIterator ) -> List[d
 			
 		else:
 			raise Exception("Unexpected block type", node)
+			
+		ctx.where_pop()
 			
 	return out
 

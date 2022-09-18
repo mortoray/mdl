@@ -207,7 +207,7 @@ def _parse_object( src : Source, indent : str ) -> EntryType:
 			if len(next_indent) < len(indent):
 				break
 			if len(next_indent) > len(indent):
-				raise Exception('invalid-syntax')
+				src.fail('invalid-syntax')
 			
 		next_char = src.peek_char()
 		if next_char in ['-','=']:

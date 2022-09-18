@@ -213,10 +213,10 @@ class Source(object):
 	def location(self) -> SourceLocation:
 		return SourceLocation(self, self._at)
 		
-	def fail(self, *message):
+	def fail(self, *message) -> NoReturn:
 		self.fail_from(self.location, *message)
 		
-	def fail_from(self, location: SourceLocation, *message):
+	def fail_from(self, location: SourceLocation, *message) -> NoReturn:
 		loc = location.translate()
 		msg = f'{loc[0]}:{loc[1]},{loc[2]}:{":".join(message)}'
 		print( msg, file=sys.stderr )
