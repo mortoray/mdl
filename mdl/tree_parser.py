@@ -10,7 +10,7 @@ from .parse_tree import *
 
 _syntax_empty_line = re.compile( r'[\p{Space_Separator}\t]*$', re.MULTILINE )
 _syntax_inline_header = re.compile( r'::' )
-_syntax_inline_note = re.compile( r'\^([\p{L}\p{N}]*)' )
+_syntax_inline_note = re.compile( r'\^([\p{L}\p{N}_-]+)' )
 
 
 class BlockLevelBuilder:
@@ -194,7 +194,7 @@ class BLMBlock(BlockLevelMatcher):
 	
 
 class BLMFootnote(BlockLevelMatcher):
-	pattern = re.compile( r'\^([\p{L}\p{N}]*)\s+' )
+	pattern = re.compile( r'\^([\p{L}\p{N}-_]+)\s+' )
 	def get_match_regex( self ) -> re.Pattern:
 		return self.pattern
 		

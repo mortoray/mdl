@@ -9,3 +9,15 @@ container
 		inline/[ 
 			text My Title
 		inline/( http://somewhere/
+	block 
+		text Another note with a hyphen name
+		inline/^ hyphen-note
+	block/^ hyphen-note
+		text A note that 
+		inline/* 
+			text isn't
+		text  just a 
+		inline/[ 
+			text link
+		inline/( http://nowhere/
+		text .

@@ -169,9 +169,10 @@ def _convert_block( ctx: _ConvertContext, nodes_iter: _NodeIterator, prev_in_sec
 				ps = para_subs[0]
 				assert ps.len_sub() == 1
 				first_sub = ps.first_sub()
-				assert isinstance(first_sub, doc_tree.Link)
-				note_node.url = first_sub.url
-				note_node.title = _as_text( ctx, first_sub)
+				if isinstance(first_sub, doc_tree.Link):
+					note_node.url = first_sub.url
+					note_node.title = _as_text( ctx, first_sub)
+				
 			else:
 				raise Exception( "Unexpected note node: " + note_node )
 			

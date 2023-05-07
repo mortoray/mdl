@@ -1,3 +1,8 @@
 A link with a [title](^link).
 
 ^link [My Title](http://somewhere/)
+
+
+Another note with a hyphen name^hyphen-note
+
+^hyphen-note A note that *isn't* just a [link](http://nowhere/).
