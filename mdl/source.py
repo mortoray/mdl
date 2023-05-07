@@ -25,9 +25,36 @@ class SourceLocation(NamedTuple):
 			self.col_at(tab_size)
 		)
 		
+	def line_context(self) -> str:
+		start = self.offset
+		back_lines = 2
+		while start > 0:
+			c = self.source._text[start]
+			if c == '\n':
+				back_lines -=1
+				if back_lines == 0:
+					break
+			start -=1
+			
+		end = start
+		lines = 4
+		while end < len(self.source._text):
+			c = self.source._text[end]
+			if c == '\n':
+				lines -=1
+				if lines == 0:
+					break
+			end += 1
+
+		return self.source._text[start:end]
 		
 	def line_at(self) -> int:
-		q = min(self.offset + self.source._base_offset, len(self.source._text)-self.source._base_offset)
+		# TODO: This is still broken for MCL files embedded documents
+		# It's unclear why base_offset was removed before, if it's one file we want relative
+		# to the entire file. If it's a section, yes, we'd like to know the relative offset in 
+		# some cases, but this is usually for visual output, so uncertain...
+		# q = min(self.offset + self.source._base_offset, len(self.source._text)-self.source._base_offset)
+		q = min(self.offset, len(self.source._text))
 		line = 1
 		while q > 1:
 			q -= 1
@@ -38,7 +65,8 @@ class SourceLocation(NamedTuple):
 		return line
 	
 	def col_at(self, tab_size = 4) -> int:
-		q = min(self.offset + self.source._base_offset, len(self.source._text)-self.source._base_offset)
+		# q = min(self.offset + self.source._base_offset, len(self.source._text)-self.source._base_offset)
+		q = min(self.offset, len(self.source._text))
 		col = 1
 		while q > 1:
 			q -= 1
@@ -59,7 +87,6 @@ class Source(object):
 		
 	def __init__(self, token: _private, text, base_offset : int = 0, path : Optional[str] = None ):
 		#FEATURE: normalize text line-endings
-		
 		self._text = text
 		self._at = 0
 		self._size = len(text)
@@ -219,6 +246,7 @@ class Source(object):
 	def fail_from(self, location: SourceLocation, *message) -> NoReturn:
 		loc = location.translate()
 		msg = f'{loc[0]}:{loc[1]},{loc[2]}:{":".join(message)}'
+		print( location.line_context(), file=sys.stderr )
 		print( msg, file=sys.stderr )
 		raise Exception(msg)
 	

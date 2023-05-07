@@ -1,2 +1,3 @@
 container 
 	block/image [somewhere]
+	block/image [here,with some alternate text]

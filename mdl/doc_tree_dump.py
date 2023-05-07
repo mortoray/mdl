@@ -151,7 +151,7 @@ class DumpVisitor:
 		self.output.write_line( '<ListItem>' )
 
 	def get_embed(self, node):
-		self.output.write_line( f'<Embed:{node.class_.name}> {node.url}' )
+		self.output.write_line( f'<Embed:{node.class_.name}> {node.url}; {node.alt}' )
 
 	def get_token(self, node):
 		self.output.write( f'<Token {" ".join(node.args)}>' )

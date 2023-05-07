@@ -1,0 +1,6 @@
+name: Wordpress HTML
+render: HtmlWriter
+args:
+	wordpress: True
+	body_only: True
+encoding: utf-8

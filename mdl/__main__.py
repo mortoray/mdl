@@ -79,7 +79,7 @@ def main() -> None:
 
 		for output in outputs:
 			print( f'Writing {output.format["name"]} to {output.filename}' )
-			writer = writerMap[output.format['render']]()
+			writer = writerMap[output.format['render']](**output.format.get('args',{}))
 			text = writer.render( doc )
 			with open( output.filename, 'w', encoding = 'utf-8' ) as out_file:
 				out_file.write( text )

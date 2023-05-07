@@ -1,4 +1,4 @@
 __pycache__/
 .mypy_cache/
-env/
+py_env/
 mdl.egg-info/

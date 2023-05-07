@@ -32,9 +32,18 @@ class XmlFormatter(tree_formatter.TreeFormatter):
 		
 		
 class HtmlWriter(render.Writer):
-	def __init__(self, *, body_only = False):
+	def __init__(
+		self, *, 
+		body_only: bool = False, 
+		wordpress: bool = False, 
+		body_start: Optional[str] = None, 
+		body_end: Optional[str] = None,
+	):
 		self._reset()
 		self._body_only = body_only
+		self._wordpress = wordpress
+		self._body_start = body_start or ''
+		self._body_end = body_end or ''
 		
 	def _reset(self):
 		self.output = XmlFormatter()
@@ -58,8 +67,10 @@ class HtmlWriter(render.Writer):
 
 			self.output.block( "body" )
 			
+		self.output.write(self._body_start)
 		if doc.root is not None:
 			doc.root.visit( self )
+		self.output.write(self._body_end)
 			
 		if not self._body_only:
 			self.output.end_block()
@@ -128,6 +139,18 @@ class HtmlWriter(render.Writer):
 	def _write_inline( self, node : doc_tree.Inline ) -> bool:
 		if node.feature == doc_tree.feature_none:
 			return True
+			
+		if node.feature == doc_tree.feature_latex:
+			if self._wordpress:
+				self.output.write('[latex]')
+				# no escaping expecting in this block
+				assert node.len_sub() == 1
+				self.output.write(node.first_sub().text)
+				self.output.write('[/latex]')
+				return False
+			else:
+				self.output.section( '<pre>', '</pre>')
+				return True
 			
 		html_feature = type(self).inline_map[node.feature.name]
 		self.output.section( html_feature[0], html_feature[1] )
@@ -235,7 +258,8 @@ class HtmlWriter(render.Writer):
 	def _write_embed( self, node ):
 		if node.class_ == doc_tree.EmbedClass.image:
 			self.output.write( '<p class="embed">' )
-			self.output.write( '<img src="{}"/>'.format( node.url ) )
+			alt = f" alt=\"{escape(node.alt)}\"" if len(node.alt) > 0 else ""
+			self.output.write( f'<img src="{node.url}"{alt}/>' )
 			self.output.write( '</p>' )
 			
 		elif node.class_ == doc_tree.EmbedClass.abstract:

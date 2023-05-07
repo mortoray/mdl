@@ -1,1 +1,2 @@
 {% image somewhere }
+{% image here "with some alternate text" }

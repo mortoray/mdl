@@ -202,6 +202,7 @@ feature_bold = InlineFeature("bold")
 feature_italic = InlineFeature("italic")
 feature_code = InlineFeature("code")
 feature_header = InlineFeature("header")
+feature_latex = InlineFeature("latex")
 
 class Link(ParagraphElement):
 	def __init__(self, url : str, title : typing.Optional[str] = None ):
@@ -235,6 +236,7 @@ class Embed(BlockNode):
 		super().__init__()
 		self.class_ = class_
 		self.url = url
+		self.alt = ""
 		
 
 class MarkClass(Enum):

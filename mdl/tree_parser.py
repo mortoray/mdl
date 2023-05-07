@@ -57,7 +57,10 @@ class BlockLevelMatcher(Protocol):
 class FeatureParse():
 	class ContentType(Enum):
 		parsed = auto()
-		raw = auto()
+		# Raw block with backslash escapes
+		back_raw = auto()
+		# Raw block with no escapes
+		noescape_raw = auto()
 		token = auto()
 		
 	open_pattern : str
@@ -73,11 +76,20 @@ class FeatureParse():
 		return fp
 		
 	@classmethod
-	def raw(class_, open_pattern, close_char ):
+	def back_raw(class_, open_pattern, close_char ):
 		fp = FeatureParse()
 		fp.open_pattern = open_pattern
 		fp.close_char = close_char
-		fp.content = class_.ContentType.raw
+		fp.content = class_.ContentType.back_raw
+		return fp
+		
+	@classmethod
+	def noescape_raw(class_, open_pattern, close_char ):
+		fp = FeatureParse()
+		fp.open_pattern = open_pattern
+		fp.close_char = close_char
+		# IMPROVE: Perhaps each block could register an escape character instead
+		fp.content = class_.ContentType.noescape_raw
 		return fp
 		
 	@classmethod
@@ -89,8 +101,12 @@ class FeatureParse():
 		return fp
 		
 	@property
-	def is_raw(self):
-		return self.content == self.ContentType.raw
+	def is_back_raw(self):
+		return self.content == self.ContentType.back_raw
+		
+	@property
+	def is_noescape_raw(self):
+		return self.content == self.ContentType.noescape_raw
 	
 	@property
 	def is_token(self):
@@ -266,9 +282,10 @@ class TreeParser:
 		self._syntax_feature_map = {
 			'*': FeatureParse.open_close('*','*'),
 			'_': FeatureParse.open_close('_','_'),
-			'`': FeatureParse.raw('`','`'),
+			'$`': FeatureParse.noescape_raw('$`','`'),
+			'`': FeatureParse.back_raw('`','`'),
 			'[': FeatureParse.open_close('[',']'),
-			'(': FeatureParse.raw('(',')'),
+			'(': FeatureParse.back_raw('(',')'),
 			'{': FeatureParse.token('{','}'),
 		}
 		
@@ -424,8 +441,11 @@ class TreeParser:
 				
 				feature = Node( NodeType.inline, src.location )
 				feature.class_ = feature_class
-				if feature_parse.is_raw:
+				if feature_parse.is_back_raw:
 					feature_text = self._parse_raw_escape_to( src, feature_parse.close_char )
+					feature.text = feature_text
+				elif feature_parse.is_noescape_raw:
+					feature_text = self._parse_raw_escape_to( src, feature_parse.close_char, escape=None )
 					feature.text = feature_text
 				elif feature_parse.is_token:
 					feature_args = self._parse_args( src, feature_parse.close_char )
@@ -446,19 +466,22 @@ class TreeParser:
 		end_bits()
 		return bits
 
-	def _parse_raw_escape_to( self, src, close_char ):
+	def _parse_raw_escape_to( self, src, close_char, escape = '\\' ):
 		start_line = src.location
 		start = src.position
 		text = ''
-		
+
 		while not src.is_at_end():
 			c = src.peek_char()
-			if c == '\\':
+			if c == escape:
 				_ = src.next_char()
 				c = src.next_char()
 			elif c == close_char:
 				_ = src.next_char()
 				return text
+			elif c == '\n':
+				# Disallowed since it makes missing ones too hard to track
+				raise src.fail_from(start_line, "line-break-inside-raw-text-feature", close_char)
 			else:
 				c = self._parse_char( src )
 				

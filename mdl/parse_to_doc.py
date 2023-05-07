@@ -199,10 +199,13 @@ def _convert_block( ctx: _ConvertContext, nodes_iter: _NodeIterator, prev_in_sec
 			
 		elif node.class_ in embed_map:
 			args = node.get_args()
-			if len(args) != 1:
-				raise Exception( f'{node.class_}-expect-1-arg', node.location.translate() )
-			assert len(args) == 1
+			num_args = len(args)
+			if num_args not in [1,2]:
+				raise Exception( f'{node.class_}-expect-1-2-arg', node.location.translate() )
+			assert num_args in [1,2]
 			para = doc_tree.Embed( embed_map[node.class_], args[0] )
+			if num_args == 2:
+				para.alt = args[1]
 			
 		else:
 			assert node.class_ == '', node.class_
@@ -245,6 +248,8 @@ def _convert_inline( ctx, nodes_iter ) -> Sequence[doc_tree.Element]:
 			feature = doc_tree.feature_italic
 		elif node.class_ == '`':
 			feature = doc_tree.feature_code
+		elif node.class_ == '$`':
+			feature = doc_tree.feature_latex
 		elif node.class_ == '(':
 			return [ doc_tree.Text( '(' + node.text + ')' ) ]
 		elif node.class_ == '::':
