@@ -3,7 +3,7 @@ jsx-lexer==1.0.0
 more-itertools==8.7.0
 mypy==0.812
 mypy-extensions==0.4.3
-Pygments==2.8.1
+Pygments==2.15.0
 regex==2021.4.4
 shelljob==0.6.2
 soupsieve==2.2.1
