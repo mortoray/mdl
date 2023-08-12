@@ -10,7 +10,7 @@ I actively use this generator/parser for:
 
 - [Edaqa's Kitchen](https://edaqaskitchen.com):: Healthy modern recipes. I use it for the text part of recipes.
 - [Edaqa's Room](https://edaqasroom.com):: Online escape rooms. I use it for documentations as well as the game's high-level language.
-- Soon... [Musing Mortoray](https://mortoray.com):: Technical Blog. I will use it for the articles.
+- [Musing Mortoray](https://mortoray.com):: Technical Blog. I will use it for the articles.
 
 
 ## Running
@@ -24,7 +24,7 @@ python -m mdl --help
 Example:
 
 ```
-python -m mdl README.mdl --write markdown README.md
+just docs
 ```
 
 Be aware that not all emitters will support all of the doc-tree at any given time. It's all in flux now.
@@ -32,12 +32,8 @@ Be aware that not all emitters will support all of the doc-tree at any given tim
 
 ## Python 3.8
 
+NOTE: Uncertain if this is still needed/up-to-date
+
 ```
-sudo add-apt-repository ppa:deadsnakes/ppa
-sudo apt-get update
-sudo apt-get install python3.8
-sudo apt install python3.8-distutils python3.8-dev
-
-
-sudo apt-get install python3.8-venv
+sudo apt install python3.10-distutils python3.10-dev
 ```
