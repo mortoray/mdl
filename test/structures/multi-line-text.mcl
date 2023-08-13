@@ -1,0 +1,14 @@
+text-one|
+	This is text on
+	multiple lines.
+	
+text-two|  # Comment on the first line
+	line
+	
+	break
+	
+text-three|
+	with
+	multiple
+	
+	paragraphs

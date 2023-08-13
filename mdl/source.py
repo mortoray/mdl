@@ -33,6 +33,8 @@ class SourceLocation(NamedTuple):
 			if c == '\n':
 				back_lines -=1
 				if back_lines == 0:
+					# don't start with linefeed
+					start += 1
 					break
 			start -=1
 			
@@ -116,13 +118,20 @@ class Source(object):
 	def skip_nonline_space(self):
 		self.match( _syntax_skip_nonline_space )
 		
-	def skip_empty_lines(self) -> None:
+	def skip_empty_lines(self) -> int:
+		"""
+			Skips empty lines in the input, returning the count of the skipped lines.
+		"""
+		skipped = 0
 		while not self.is_at_end():
 			m = _syntax_empty_line.match( self._text, self._at )
 			if m == None:
-				return
+				break
+			skipped += 1
 			self._at = m.end()
 			self.match( _syntax_line_ends )
+			
+		return skipped
 	
 	def is_at_end(self):
 		return self._at >= self._size
@@ -170,8 +179,29 @@ class Source(object):
 		return self._at
 
 	def match_indent(self, indent : str) -> Tuple[bool, str]:
+		"""
+			Checks for a matching indent and removes it from the input if it matches.
+			
+			@return 
+				[0] True is indent matches provided indent string
+				[1] the actual leading space
+		"""
 		lead_space = self.peek_match( _syntax_lead_space ).group(1)
 		if lead_space != indent:
+			return (False, lead_space)
+		_ = self.match( _syntax_lead_space )
+		return (True, lead_space)
+		
+	def exceed_indent(self, indent: str) -> Tuple[bool, str]:
+		"""
+			@return
+				[0] True if the lead space matches and exceeds the provided indent
+				[1] the actual leading space
+		"""
+		lead_space = self.peek_match( _syntax_lead_space ).group(1)
+		if len(lead_space) < len(indent):
+			return (False, lead_space)
+		if lead_space[:len(indent)] != indent:
 			return (False, lead_space)
 		_ = self.match( _syntax_lead_space )
 		return (True, lead_space)
@@ -240,13 +270,39 @@ class Source(object):
 	def location(self) -> SourceLocation:
 		return SourceLocation(self, self._at)
 		
-	def fail(self, *message) -> NoReturn:
-		self.fail_from(self.location, *message)
+	def restore_location(self, location: SourceLocation) -> None:
+		assert location.source == self
+		self._at = location.offset
 		
-	def fail_from(self, location: SourceLocation, *message) -> NoReturn:
-		loc = location.translate()
-		msg = f'{loc[0]}:{loc[1]},{loc[2]}:{":".join(message)}'
-		print( location.line_context(), file=sys.stderr )
-		print( msg, file=sys.stderr )
-		raise Exception(msg)
+	def fail(self, code: str, *message) -> NoReturn:
+		self.fail_from(self.location, code, *message)
+		
+	def fail_from(self, location: SourceLocation, code: str, *message) -> NoReturn:
+		raise ParseException(code=code, location=location, message=list(message))
 	
+class ParseException(Exception):
+	def __init__(self, *, code: str, location: SourceLocation, message: list[str]=[]) -> None:
+		self._code = code
+		self._location = location
+		self._message = message
+		
+		loc = location.translate()
+		msg = f'{loc[0]}:{loc[1]},{loc[2]}:{":".join([code] + message)}'
+		super().__init__(msg)
+
+			
+	@property
+	def code(self) -> str:
+		return self._code
+		
+	def get_context(self) -> str:
+		line_prefix = ' | '
+		text = self._location.line_context().splitlines()
+		return "\n".join( line_prefix + line for line in text )
+		
+		
+	def format_line(self) -> str:
+		loc = self._location.translate()
+		msg = f'{loc[0]}:{loc[1]},{loc[2]}:{":".join([self._code] + self._message)}'
+		return msg
+		

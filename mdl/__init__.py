@@ -23,3 +23,5 @@ from .structure import (
 	ArrayList as ArrayList, 
 	QuotedString as QuotedString,
 )
+
+from .source import ParseException as ParseException

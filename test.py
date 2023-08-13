@@ -1,6 +1,7 @@
 """
 	Test driver for document tests.
 """
+from typing import Callable, Any
 import os, sys
 from mdl import tree_parser, parse_to_doc, format_html, doc_process, document, parse_tree_dump, structure
 import mdl
@@ -20,7 +21,7 @@ def status(text, okay):
 		bad_count += 1
 	print( passed(text) if okay else failed(text), end=' ' )
 	
-for fname in fs.find( 'test/docs', name_regex = r".*\.mdl" ):
+def test_mdl( fname: str ) -> None:
 	print( fname, end= ' ' )
 	base = os.path.splitext( fname )[0]
 	
@@ -53,17 +54,7 @@ for fname in fs.find( 'test/docs', name_regex = r".*\.mdl" ):
 			
 		status( 'PreDoc', doc_dump == check_dump )
 		
-	yaml_name = base + '.yaml'
-	if os.path.exists( yaml_name ):
-		test = structure.structure_load( yaml_name )
-		if 'fail-parse' in test:
-			try:
-				_ = tp.parse_file( fname )
-				okay = False
-			except Exception as e:
-				okay = True
-			status( 'Fail-Parse', okay )
-			
+	check_directions( fname, base, parse_file=tp.parse_file )
 			
 	html_name = base + '.html'
 	if os.path.exists( html_name ):
@@ -79,14 +70,36 @@ for fname in fs.find( 'test/docs', name_regex = r".*\.mdl" ):
 	print()
 		
 		
-		
-for fname in fs.find( 'test/structures', name_regex = r".*\.mcl" ):
+def check_directions( 
+	fname: str, 
+	base : str,
+	*,
+	parse_file: Callable[[str],Any]
+) -> None:
+	# Yaml was the historical name of these, kept to distinguish from .mcl in structures test
+	directions_name = base + '.yaml'
+	if os.path.exists( directions_name ):
+		test = structure.structure_load( directions_name )
+		fail_parse = test.get('fail-parse')
+		if fail_parse is not None:
+			try:
+				parse_file( fname )
+				okay = False
+			except mdl.ParseException as e:
+				okay = e.code == fail_parse
+				if not okay:
+					print( e.code, '!=', fail_parse)
+			status( 'Fail-Parse', okay )
+			
+def test_mcl( fname: str ) -> None:		
 	print( fname, end=' ')
 	base = os.path.splitext( fname )[0]
-	obj = structure.structure_load( fname )
 	
+	check_directions(fname, base, parse_file=structure.structure_load)
+				
 	json_name = base + '.json'
 	if os.path.exists( json_name ):
+		obj = structure.structure_load( fname )
 		json = structure.structure_format_json( obj, pretty = True )
 		
 		with open( json_name, 'r', encoding = 'utf-8' ) as check:
@@ -96,6 +109,7 @@ for fname in fs.find( 'test/structures', name_regex = r".*\.mcl" ):
 		
 	dump_name = base + '.dump'
 	if os.path.exists( dump_name ):
+		obj = structure.structure_load( fname )
 		dump = structure.dump_structure( obj )
 		
 		with open( dump_name, 'r', encoding = 'utf-8' ) as check:
@@ -104,8 +118,16 @@ for fname in fs.find( 'test/structures', name_regex = r".*\.mcl" ):
 		status( 'Dump', dump == check_dump )
 		
 	print()
+
+def main() -> None:
+	for fname in fs.find( 'test/docs', name_regex = r".*\.mdl" ):
+		test_mdl( fname )
+	for fname in fs.find( 'test/structures', name_regex = r".*\.mcl" ):
+		test_mcl( fname )
 	
-if bad_count > 0:
-	print(failed(f"{bad_count} errors"))
-	sys.exit(1)
+	if bad_count > 0:
+		print(failed(f"{bad_count} errors"))
+		sys.exit(1)
+		
+main()
 	

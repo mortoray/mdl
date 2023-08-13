@@ -35,10 +35,11 @@ def _parse_source( src : Source ) -> ObjectType:
 	return obj
 
 	
-_syntax_name = re.compile( r'([\p{L}\p{N}-_.@$]+)\s*([:=])' )
+_syntax_name = re.compile( r'([\p{L}\p{N}-_.@$]+)\s*([:=\|])' )
 _syntax_comment = re.compile( r'([\p{Space_Separator}\t\s]*)#[^\r\n]*' )
 _syntax_space_or_comment = re.compile( r'[\p{Space_Separator}\t#\s]' )
 _syntax_line_or_comment = re.compile( r'[\r\n#]' )
+_syntax_line = re.compile( r'[\r\n]' )
 
 
 # (item0 ... itemN)
@@ -61,6 +62,7 @@ class QuotedString(str):
 	
 def promote_value( value : str ) -> Union[str,float,bool,None]:
 	# TODO: have specific conversions allowed
+	# TODO: Use Decimal instead of float
 	try:
 		return int(value)
 	except ValueError:
@@ -246,11 +248,51 @@ def _parse_named( src : Source, indent : Optional[str] = None, terminal : Option
 			value = _parse_space_value(src, terminal)
 	elif op == '=':
 		value = CallList(_parse_inline_list(src, end_on_line = True))
+	elif op == '|':
+		if terminal is not None:
+			src.fail('no-block-in-inline')
+		value = _parse_block_text(src, indent or '')
 	else:
 		raise Exception('unreachable')
 		
 	return (name, value)
 	
+def _parse_end_of_line( src: Source, *, allow_comment: bool ) -> None:
+	src.skip_nonline_space()
+	if allow_comment:
+		src.match( _syntax_comment )
+	if not src.match( _syntax_line ):
+		src.fail('expecting-end-of-line')
+	
+def _parse_block_text( src: Source, indent: str ) -> str:
+	_parse_end_of_line(src, allow_comment=True)
+		
+	[valid, block_indent] = src.exceed_indent(indent)
+	if not valid:
+		src.fail('text-block-need-indent')
+	text = src.parse_string_to( re = _syntax_line ).strip()
+	if len(text) == 0:
+		src.fail('text-block-no-empty-first')
+	_parse_end_of_line( src, allow_comment=False )
+	
+	while True:
+		skipped = src.skip_empty_lines()
+		[valid, lead] = src.match_indent(block_indent)
+		if not valid:
+			if len(lead) > len(indent):
+				src.fail('text-block-extra-indent')
+			break
+
+		if skipped > 0:
+			text += "\n"
+		else:
+			text += " "
+			
+		next_line = src.parse_string_to( re = _syntax_line ).strip()
+		text += next_line
+		_parse_end_of_line( src, allow_comment=False )
+
+	return text
 
 def dump_structure( obj : EntryType, indent : str = '', *, _is_initial = True ) -> str:
 	text = ''

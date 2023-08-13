@@ -5,7 +5,7 @@
 from typing import *
 import argparse, os, sys
 
-from mdl import structure
+from mdl import structure, ParseException
 
 
 def main() -> None:
@@ -21,7 +21,13 @@ def main() -> None:
 	
 	if args.mcl_file:
 		print( f'Loading MCL {args.mcl_file}' )
-		obj = structure.structure_load( args.mcl_file )
+		try:
+			obj = structure.structure_load( args.mcl_file )
+		except ParseException as e:
+			print(e.format_line())
+			print(e.get_context())
+			sys.exit(1)
+			
 		
 		if args.write_json:
 			print( f'Writing JSON {args.write_json}' )

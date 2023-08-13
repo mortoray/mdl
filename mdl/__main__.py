@@ -6,7 +6,7 @@ from typing import *
 import argparse, os, sys, codecs
 from pkg_resources import resource_listdir, resource_string
 
-from mdl import  format_html, format_markdown, render, structure
+from mdl import  format_html, format_markdown, render, structure, ParseException
 from .document import load_document
 
 class Output(NamedTuple):
@@ -69,13 +69,18 @@ def main() -> None:
 		mdl_file = args.mdl_file
 			
 		print( 'Loading MDL {}'.format( mdl_file ) )
-		doc = load_document( mdl_file, 
-			_dump_parse = args.dump_parse,
-			_write_parse = args.write_parse[0] if args.write_parse else None,
-			_write_doc = args.write_doc[0] if args.write_doc else None,
-			_dump_predoc = args.dump_predoc,
-			_dump_doc = args.dump_doc,
-			_write_predoc = args.write_predoc[0] if args.write_predoc else None )
+		try:
+			doc = load_document( mdl_file, 
+				_dump_parse = args.dump_parse,
+				_write_parse = args.write_parse[0] if args.write_parse else None,
+				_write_doc = args.write_doc[0] if args.write_doc else None,
+				_dump_predoc = args.dump_predoc,
+				_dump_doc = args.dump_doc,
+				_write_predoc = args.write_predoc[0] if args.write_predoc else None )
+		except ParseException as e:
+			print(e.format_line())
+			print(e.get_context())
+			sys.exit(1)
 
 		for output in outputs:
 			print( f'Writing {output.format["name"]} to {output.filename}' )

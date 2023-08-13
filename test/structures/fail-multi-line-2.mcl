@@ -1,0 +1,4 @@
+bad|
+	an over-indented
+		line
+	is not allowed, as meaning is ambiguous
