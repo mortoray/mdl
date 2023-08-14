@@ -404,6 +404,7 @@ class TreeParser:
 			pass
 				
 		has_end_char = False
+		end_count = 0
 		while not src.is_at_end():
 			c = src.peek_char()
 			if c == end_char:
@@ -411,6 +412,18 @@ class TreeParser:
 				_ = src.next_char()
 				break
 				
+			if c == '\n':
+				if len(text) == 0:
+					raise src.fail_from(start_line, "trailing-inline-feature", end_char)
+				if end_count != 0:
+					raise src.fail_from(start_line, "break-inline-feature", end_char )
+					
+				text += " "
+				end_count+=1
+				continue
+				
+			end_count = 0
+			
 			if c == '\\':
 				_ = src.next_char()
 				text += src.next_char()

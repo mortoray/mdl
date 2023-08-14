@@ -1,0 +1,4 @@
+An inline feature like _
+may not end a line_.
+
+So this should fail.
