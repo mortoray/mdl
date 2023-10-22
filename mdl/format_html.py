@@ -145,7 +145,9 @@ class HtmlWriter(render.Writer):
 				self.output.write('[latex]')
 				# no escaping expecting in this block
 				assert node.len_sub() == 1
-				self.output.write(node.first_sub().text)
+				sub_node = node.first_sub()
+				assert isinstance(sub_node, doc_tree.Text)
+				self.output.write(sub_node.text)
 				self.output.write('[/latex]')
 				return False
 			else:
