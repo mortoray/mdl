@@ -38,12 +38,14 @@ class HtmlWriter(render.Writer):
 		wordpress: bool = False, 
 		body_start: Optional[str] = None, 
 		body_end: Optional[str] = None,
+		no_section: bool = False,
 	):
 		self._reset()
 		self._body_only = body_only
 		self._wordpress = wordpress
 		self._body_start = body_start or ''
 		self._body_end = body_end or ''
+		self._no_section = no_section
 		
 	def _reset(self):
 		self.output = XmlFormatter()
@@ -188,7 +190,7 @@ class HtmlWriter(render.Writer):
 		return True
 		
 	def _write_section( self, node ):
-		if node.level > 0:
+		if node.level > 0 and not self._no_section:
 			self.output.block( "section" )
 		return True
 			

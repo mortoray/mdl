@@ -1,0 +1,6 @@
+name: Steam HTML
+render: HtmlWriter
+args:
+	body_only: True
+	no_section: True
+encoding: utf-8

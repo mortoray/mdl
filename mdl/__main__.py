@@ -1,10 +1,10 @@
-# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-re
 """
 	CLI for the MDL processor.
 """
 from typing import *
 import argparse, os, sys, codecs
-from pkg_resources import resource_listdir, resource_string
+from importlib import resources
 
 from mdl import  format_html, format_markdown, render, structure, ParseException
 from .document import load_document
@@ -20,14 +20,14 @@ writerMap = {
 }
 
 def load_format(ref: str) -> Dict:
-	data = resource_string(__package__, f'formats/{ref}.mcl')
+	data = (resources.files(__package__) / f'formats/{ref}.mcl').read_bytes()
 	text = codecs.decode(data, 'utf-8')
 	return structure.structure_parse(text)
 	
 def list_formats() -> None:
-	format_files = resource_listdir(__package__, 'formats')
-	for format_file in format_files:
-		ref = os.path.splitext(format_file)[0]
+	format_files = resources.files(__package__) / 'formats'
+	for format_file in format_files.iterdir():
+		ref = os.path.splitext(format_file.name)[0]
 		format = load_format(ref)
 		print(f'{ref}: {format["name"]}')
 		
