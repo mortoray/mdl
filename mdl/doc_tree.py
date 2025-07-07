@@ -220,7 +220,7 @@ class Link(ParagraphElement):
 		
 
 class Note(ParagraphElement):
-	def __init__(self, text: str|None=None):
+	def __init__(self, text: str):
 		super().__init__()
 		self.text = text
 		

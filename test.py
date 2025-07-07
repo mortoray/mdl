@@ -3,7 +3,7 @@
 """
 from typing import Callable, Any
 import os, sys
-from mdl import tree_parser, parse_to_doc, format_html, doc_process, document, parse_tree_dump, structure
+from mdl import tree_parser, parse_to_doc, format_html, doc_process, document, parse_tree_dump, structure, format_mdl
 import mdl
 from shelljob import fs #type: ignore
 
@@ -68,6 +68,21 @@ def test_mdl( fname: str ) -> None:
 		status( 'HTML', html == check_html )
 		
 	print()
+	
+	
+def test_rewrite( fname: str ) -> None:
+	orig_doc = mdl.load_document( fname )
+	orig_dump = document.dump_document( orig_doc )
+	
+	mdl_format = format_mdl.MdlWriter().render( orig_doc )
+	with fs.NamedTempFile() as nm:
+		with open(nm, 'w', encoding='utf-8') as out_file:
+			out_file.write( mdl_format )
+			
+		dup_doc = mdl.load_document( nm )
+		dup_dump = document.dump_document( dup_doc )
+		status( "MDL", orig_dump == dup_dump )
+	
 		
 		
 def check_directions( 
@@ -78,10 +93,12 @@ def check_directions(
 ) -> None:
 	# Yaml was the historical name of these, kept to distinguish from .mcl in structures test
 	directions_name = base + '.yaml'
+	expect_fail = False
 	if os.path.exists( directions_name ):
 		test = structure.structure_load( directions_name )
 		fail_parse = test.get('fail-parse')
 		if fail_parse is not None:
+			expect_fail = True
 			try:
 				parse_file( fname )
 				okay = False
@@ -90,6 +107,11 @@ def check_directions(
 				if not okay:
 					print( e.code, '!=', fail_parse)
 			status( 'Fail-Parse', okay )
+			
+	if not expect_fail:
+		test_rewrite( fname )
+
+			
 			
 def test_mcl( fname: str ) -> None:		
 	print( fname, end=' ')

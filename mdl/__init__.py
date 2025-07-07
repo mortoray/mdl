@@ -4,8 +4,7 @@ from . import (
 	parse_to_doc as parse_to_doc, 
 	format_html as format_html, 
 	doc_process as doc_process, 
-	document as documet, 
-	format_html as format_html,
+	document as document, 
 )
 
 # Names exposed as part of the high-level API
