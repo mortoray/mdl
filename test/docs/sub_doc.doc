@@ -2,13 +2,13 @@
 title: "A Document with a sub-document."
 desc: "A desc"
 +++
-<Section:0>
+<RootSection>
 	<Paragraph>
 		Some text.
 +++
 document: "related"
 title: "sub-document"
 +++
-<Section:0>
+<RootSection>
 	<Paragraph>
 		Related stuff.

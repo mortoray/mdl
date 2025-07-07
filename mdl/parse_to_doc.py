@@ -3,10 +3,11 @@ from . import doc_tree
 from . import tree_parser
 from typing import *
 
-class _ConvertContext(object):
-	def __init__(self):
-		self.open_notes = {}
-		self.node_stack = []
+class _ConvertContext(object, ):
+	def __init__(self, root_section: doc_tree.RootSection):
+		self.node_stack: list[tree_parser.Node] = []
+		self.root_section = root_section
+		self.open_notes: set[str] = set()
 		
 	def where_push(self, node: tree_parser.Node):
 		self.node_stack.append(node)
@@ -52,12 +53,12 @@ class _NodeIterator(object):
 		return self._at < len(self._nodes)
 		
 
-def convert( node : tree_parser.Node ) -> doc_tree.Section:
+def convert( node : tree_parser.Node ) -> doc_tree.RootSection:
 	assert node.type == tree_parser.NodeType.container
 	
-	ctx = _ConvertContext()
+	root = doc_tree.RootSection()
+	ctx = _ConvertContext(root)
 	try:
-		root = doc_tree.Section(0)
 		subs = _convert_blocks( ctx, _NodeIterator(node.iter_sub()) )
 		root.add_subs( subs )
 	except:
@@ -160,24 +161,24 @@ def _convert_block( ctx: _ConvertContext, nodes_iter: _NodeIterator, prev_in_sec
 			if not node.text in ctx.open_notes:
 				raise Exception( f'There is no reference to this note "{node.text}"' )
 			assert len(para_subs) == 1 and isinstance(para_subs[0], doc_tree.Paragraph)
-			note_node = ctx.open_notes[node.text]
-			del ctx.open_notes[node.text]
+			ctx.open_notes.remove(node.text)
 			
-			if isinstance( note_node, doc_tree.Note ):
-				note_node.add_subs( para_subs[0].iter_sub() )
-			elif isinstance( note_node, doc_tree.Link ):
-				ps = para_subs[0]
-				assert ps.len_sub() == 1
-				first_sub = ps.first_sub()
-				if isinstance(first_sub, doc_tree.Link):
-					note_node.url = first_sub.url
-					note_node.title = _as_text( ctx, first_sub)
-				
-			else:
-				raise Exception( "Unexpected note node: " + note_node )
+# 			if isinstance( note_node, doc_tree.Note ):
+# 				note_node.add_subs( para_subs[0].iter_sub() )
+# 			elif isinstance( note_node, doc_tree.Link ):
+# 				ps = para_subs[0]
+# 				assert ps.len_sub() == 1
+# 				first_sub = ps.first_sub()
+# 				if isinstance(first_sub, doc_tree.Link):
+# 					note_node.url = first_sub.url
+# 					note_node.title = _as_text( ctx, first_sub)
+# 				
+# 			else:
+# 				raise Exception( "Unexpected note node: " + note_node )
 			
-			
-			return None
+			note_defn = doc_tree.NoteDefn(node.text, para_subs[0].iter_sub()  )
+			ctx.root_section.notes[node.text] = note_defn
+			return note_defn
 			
 		if node.class_ == '----':
 			para = doc_tree.BlockMark( doc_tree.MarkClass.minor_separator )
@@ -227,6 +228,11 @@ def _convert_block( ctx: _ConvertContext, nodes_iter: _NodeIterator, prev_in_sec
 			else:
 				assert len(para_subs) == 1
 				para = para_subs[0]
+
+		comment = node.get_annotation( "comment" )
+		if comment is not None and comment.node is not None:
+			assert para is not None
+			para.comment = _convert_blocks( ctx, _NodeIterator([comment.node]) )
 			
 		return para
 	
@@ -275,18 +281,18 @@ def _convert_inline( ctx, nodes_iter ) -> Sequence[doc_tree.Element]:
 
 def _convert_note( ctx, node, nodes_iter ):
 	if len(node.text) > 0:
-		if node.text in ctx.open_notes:
+		if node.text in ctx.open_notes or node.text in ctx.root_section.notes:
 			raise Exception( "There's already a footnote reference with name {}".format( node.text ) )
 		
-		empty_note = doc_tree.Note() #incomplete for now
-		ctx.open_notes[node.text] = empty_note
-		return empty_note
+		ctx.open_notes.add( node.text )
+		return doc_tree.Note(text=node.text)
 		
 	else:
-		next_node = nodes_iter.next()
-		
-		link = _convert_link( ctx, node, next_node )
-		return doc_tree.Note(link)
+		assert False
+# 		next_node = nodes_iter.next()
+# 		
+# 		link = _convert_link( ctx, node, next_node )
+# 		return doc_tree.Note(elements=link)
 
 
 def _collapse_text( ctx, node ):
@@ -305,17 +311,17 @@ def _convert_link( ctx: _ConvertContext, node: tree_parser.Node, nodes_iter: _No
 	url = url_node.text
 	assert len(url) != 0
 	if url[0] == '^':
-		note = url[1:]
+		note_id = url[1:]
 		url = None
 	else:
 		url = url_node.text
-		note = None
+		note_id = None
 
-	block = doc_tree.Link(url)
+	block = doc_tree.Link(url=url, note_id=note_id)
 	block.add_subs( _convert_inlines(ctx, node) )
 
-	if note != None:
-		ctx.open_notes[note] = block
+	if note_id is not None:
+	 	ctx.open_notes.add(note_id)
 		
 	return block
 	

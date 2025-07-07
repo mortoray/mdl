@@ -1,6 +1,6 @@
 +++
 tokena: "replacement token"
 +++
-<Section:0>
+<RootSection>
 	<Paragraph>
 		This document uses a <Token doc.tokena>.

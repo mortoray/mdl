@@ -35,6 +35,7 @@ class StackVisitor:
 class Node(abc.ABC):
 	def __init__(self):
 		super().__init__()
+		self.comment: typing.Collection[Node] | None = None
 		
 	def visit( self, proc : VisitCallback ) -> None:
 		if proc.enter( self ):
@@ -161,6 +162,11 @@ class Inline(ParagraphElement):
 class SectionTitle(ElementContainer, BlockNode):
 	pass
 	
+class RootSection(BlockContainer):
+	def __init__(self):
+		super().__init__()
+		self.notes : dict[str, NoteDefn] = {}
+	
 class Section(BlockContainer):
 	title : typing.Optional[SectionTitle]
 	
@@ -205,16 +211,24 @@ feature_header = InlineFeature("header")
 feature_latex = InlineFeature("latex")
 
 class Link(ParagraphElement):
-	def __init__(self, url : str, title : typing.Optional[str] = None ):
+	def __init__(self, *, url : str | None= None, note_id: str | None = None, title : typing.Optional[str] = None ):
 		super().__init__()
 		self.url = url
 		self.title = title
+		self.note_id = note_id
+		assert (url is None) != (note_id is None)
 		
 
 class Note(ParagraphElement):
-	def __init__(self, elements : typing.Sequence[Element] = []):
+	def __init__(self, text: str|None=None):
+		super().__init__()
+		self.text = text
+		
+class NoteDefn(ElementContainer, BlockNode):
+	def __init__(self, text: str, elements : typing.Sequence[Element] = [] ):
 		super().__init__()
 		self.add_subs( elements )
+		self.text = text
 		
 class Token(ParagraphElement):
 	def __init__(self, args : typing.List[str]):

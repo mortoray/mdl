@@ -16,5 +16,5 @@ docs:
 	python -m mdl README.mdl --write markdown README.md
 
 setup-dev:
-	python3.10 -m venv py_env
+	python3.12 -m venv py_env
 	py_env/bin/pip install -r requirements.txt

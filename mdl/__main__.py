@@ -68,7 +68,7 @@ def main() -> None:
 	if args.mdl_file:
 		mdl_file = args.mdl_file
 			
-		print( 'Loading MDL {}'.format( mdl_file ) )
+		print( f'Loading MDL {mdl_file}' )
 		try:
 			doc = load_document( mdl_file, 
 				_dump_parse = args.dump_parse,

@@ -3,11 +3,11 @@ from typing import *
 
 class Document:
 	def __init__(self ):
-		self.root : Optional[doc_tree.Section] = None
+		self.root : Optional[doc_tree.RootSection] = None
 		self.meta : structure.ObjectType = {}
 		self.sub : List[Document] = []
 		
-	def set_root( self, node : doc_tree.Section ) -> None:
+	def set_root( self, node : doc_tree.RootSection ) -> None:
 		self.root = node
 		
 	def set_meta( self, meta : structure.ObjectType ) -> None:
@@ -27,7 +27,8 @@ def dump_document( doc : Document, *, _first = True ) -> str:
 		text += "+++\n"
 	elif not _first:
 		text += "+++\n"
-	text += doc_tree_dump.get_node( doc.root )
+	if doc.root is not None:
+		text += doc_tree_dump.get_node( doc.root )
 	
 	for sub in doc.sub:
 		text += dump_document( sub, _first = False )

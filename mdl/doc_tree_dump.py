@@ -73,7 +73,14 @@ class DumpVisitor:
 		if isinstance( node, doc_tree.BlockNode ):
 			self.output.unindent()
 			
-	def _write(self, node) -> None:
+	def _write(self, node: doc_tree.Node) -> None:
+		if node.comment is not None:
+			self.output.write_line( "<Comment>" )
+			self.output.indent()
+			for c in node.comment:
+				self.output.write( get_node(c) )
+			self.output.unindent()
+			
 		def q( node_type, call ):
 			if isinstance( node, node_type ):
 				call( node )
@@ -81,6 +88,7 @@ class DumpVisitor:
 			return False
 			
 		has = \
+			q( doc_tree.RootSection, self.get_root_section ) or \
 			q( doc_tree.Section, self.get_section ) or \
 			q( doc_tree.SectionTitle, self.get_section_title ) or \
 			q( doc_tree.Inline, self.get_inline ) or \
@@ -94,7 +102,8 @@ class DumpVisitor:
 			q( doc_tree.Embed, self.get_embed ) or \
 			q( doc_tree.Code, self.get_code ) or \
 			q( doc_tree.Token, self.get_token ) or \
-			q( doc_tree.BlockMark, self.get_block_mark )
+			q( doc_tree.BlockMark, self.get_block_mark ) or \
+			q( doc_tree.NoteDefn, self.get_note_defn )
 		
 		if not has:
 			raise Exception( "Unsupported type", node )
@@ -125,6 +134,9 @@ class DumpVisitor:
 		#	text += get( node, indent )
 		#return text
 
+	def get_root_section(self, node : doc_tree.RootSection):
+		self.output.write_line( f'<RootSection>' )
+	
 	def get_section(self, node : doc_tree.Section):
 		self.output.write_line( f'<Section:{node.level}>' )
 		
@@ -141,8 +153,8 @@ class DumpVisitor:
 			self.output.write( f';title={node.title}' )
 		self.output.write( '｣｢' )
 
-	def get_note(self, node):
-		self.output.write( '^{' )
+	def get_note(self, node: doc_tree.Note):
+		self.output.write( f'^{{{node.text}:' )
 		
 	def get_list(self, node):
 		self.output.write_line( '<List>' )
@@ -159,8 +171,11 @@ class DumpVisitor:
 	def get_block_mark(self, node):
 		self.output.write_line( f'<BlockMark:{node.class_.name}>' )
 		
+	def get_note_defn(self, node: doc_tree.NoteDefn) :
+		self.output.write_line( f'<NoteDefn:{node.text}>' )
 		
-def get_node(node):
+		
+def get_node(node: doc_tree.Node) -> str:
 	dv = DumpVisitor()
 	node.visit( dv )
 	dv.output.end()

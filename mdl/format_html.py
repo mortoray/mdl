@@ -114,17 +114,22 @@ class HtmlWriter(render.Writer):
 			q( doc_tree.List, self._write_list ) or \
 			q( doc_tree.ListItem, self._write_list_item ) or \
 			q( doc_tree.Note, self._write_note ) or \
+			q( doc_tree.RootSection, self._write_root_section ) or \
 			q( doc_tree.Section, self._write_section ) or \
 			q( doc_tree.SectionTitle, self._write_section_title ) or \
 			q( doc_tree.Text, self._write_text ) or \
 			q( doc_tree.Paragraph, self._write_paragraph ) or \
 			q( doc_tree.Embed, self._write_embed ) or \
 			q( doc_tree.BlockMark, self._write_block_mark ) or \
+			q( doc_tree.NoteDefn, self._write_note_defn) or \
 			fail()
 			
 		return result
 
 			
+	def _write_note_defn(self, node: doc_tree.NoteDefn) -> bool:
+		return False
+	
 	def _write_sub( self, node ):
 		for sub in node.iter_sub():
 			sub.visit( self )
@@ -189,12 +194,15 @@ class HtmlWriter(render.Writer):
 		#else we collapse the paragraph in a flow parent
 		return True
 		
-	def _write_section( self, node ):
+	def _write_root_section( self, node: doc_tree.Section ):
+		return True
+		
+	def _write_section( self, node: doc_tree.Section ):
 		if node.level > 0 and not self._no_section:
 			self.output.block( "section" )
 		return True
 			
-	def _write_section_title( self, node ):
+	def _write_section_title( self, node: doc_tree.SectionTitle ):
 		level_adjust = 2
 		parent = self.stack[-1]
 		assert isinstance( parent, doc_tree.Section )
@@ -202,20 +210,49 @@ class HtmlWriter(render.Writer):
 		return True
 		
 		
-	def _write_text( self, node ):
+	def _write_text( self, node: doc_tree.Text ):
 		self.output.text( node.text )
 		return True
 
-	def _write_link( self, node ):
+	def _root_section( self ) -> doc_tree.RootSection:
+		root_section = self.stack[0]
+		assert isinstance(root_section, doc_tree.RootSection)
+		return root_section
+	
+	def _as_text( self, node: doc_tree.Node ) -> str:
+		text = ""
+		for element in node.iter_sub():
+			if isinstance( element, doc_tree.Text ):
+				text += element.text
+		return text
+		
+	def _write_link( self, node: doc_tree.Link):
 		# TODO: more escaping
-		attrs = { 'href': node.url }
-		if node.title:
-			attrs['title'] = node.title
+		attrs: dict[str,str] = {}
+
+		if node.note_id is not None:
+			section = self._root_section()
+			link = section.notes[node.note_id].first_sub()
+			assert isinstance(link, doc_tree.Link)
+			if link.url is not None:
+				attrs['href'] = link.url
+				
+			if link.len_sub() > 0:
+				attrs['title'] = self._as_text(link)
+			
+		else:
+			if node.url is not None:
+				attrs['href'] = node.url
+			if node.title is not None:
+				attrs['title'] = node.title
+				
 		self.output.block( 'a', attrs )
 		return True
 
-	def _write_note( self, node ):
-		self.notes.append( node )
+	def _write_note( self, node: doc_tree.Note ):
+		section = self._root_section()
+		note = section.notes[node.text]
+		self.notes.append( note )
 		number = len(self.notes)
 		self.output.write( "<sup class='note'><a href='#note-{}'>{}</a></sup>".format( number, number ) )
 		return False

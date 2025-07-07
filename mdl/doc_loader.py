@@ -1,4 +1,6 @@
-from bs4 import BeautifulSoup #type: ignore
+from typing import cast
+from bs4 import BeautifulSoup
+from bs4.element import Tag
 from urllib import request
 
 def get_document_info( url ):
@@ -7,6 +9,9 @@ def get_document_info( url ):
 	
 	doc = {}
 	for meta in data.find_all( 'meta' ):
+		if not isinstance(meta, Tag):
+			continue
+			
 		name = meta.get('name',None)
 		if name is None:
 			name = meta.get('property', None)
@@ -19,19 +24,19 @@ def get_document_info( url ):
 			doc['title'] = content
 		
 			
-	author = data.find( itemprop = 'author' )
+	author = cast( Tag, data.find( itemprop = 'author' ))
 	if author:
-		name = author.find( itemprop = 'name' )
+		author_name = cast( Tag, author.find( itemprop = 'name' ))
 		if name:
-			doc['author'] = name.text
+			doc['author'] = author_name.text
 		
-		img = author.find( 'img' )
+		img = cast( Tag, author.find( 'img' ) )
 		if img:
-			doc['author_pic'] = img.get('src', None )
+			doc['author_pic'] = cast( str, img.get('src', None ))
 			
-		url = author.find( itemprop = 'url' )
+		url = cast( Tag, author.find( itemprop = 'url' ))
 		if url:
-			doc['author_url'] = url.get('content', None)
+			doc['author_url'] = cast( str, url.get('content', None))
 	
 	return doc
 	

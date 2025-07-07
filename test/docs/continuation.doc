@@ -1,4 +1,4 @@
-<Section:0>
+<RootSection>
 	<Block:quote>
 		<Paragraph>
 			A continuation is a block that extends the previous block, assuming it's a container of some kind.
