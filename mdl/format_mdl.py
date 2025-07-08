@@ -1,7 +1,7 @@
 __all__ = ['MdlWriter']
 
 import typing
-from . import render, tree_formatter, document, doc_tree
+from . import render, tree_formatter, document, doc_tree, structure
 
 class MdlFormatter(tree_formatter.TreeFormatter):
 	def __init__(self):
@@ -20,11 +20,14 @@ class MdlFormatter(tree_formatter.TreeFormatter):
 		return '"' + text + '"'
 		
 	
+def indent_lines(text: str) -> str:
+	return "".join('\t' + line + '\n' for line in text.splitlines())
 	
 class StackItem:
 	def __init__(self, node : doc_tree.Node ):
 		self.node = node
 		self.is_flow = False
+		self.child_count = 0
 	
 class MdlWriter(render.Writer):
 	def __init__(self):
@@ -32,19 +35,50 @@ class MdlWriter(render.Writer):
 		self.output = MdlFormatter()
 		self.stack : typing.List[StackItem] = []
 		self.unsupported = False
+		self.has_line_end = False
+		self.first_paragraph = True
 		
 	def render(self, doc: document.Document ) -> str:
+		if len(doc.meta) > 0:
+			self.output.write("+++\n")
+			self.output.write(structure.dump_structure( doc.meta ))
+			self.output.write("+++\n\n")
+			
 		doc.root.visit( self )
 		return self.output.value
 
 	def enter( self, node : doc_tree.Node ) -> bool:
 		self.output.open_context()
 		self.stack.append( StackItem(node) )
+		if len(self.stack) > 1:
+			parent_item = self.stack[-2]
+			parent_item.child_count += 1
+			
+			# this is the only thing that supports indented flow
+			if isinstance( parent_item.node, doc_tree.ListItem ):
+				if parent_item.child_count > 2:
+					self.output.write('\n')
+				if parent_item.child_count > 1:
+					self.output.capture( indent_lines )
+			elif isinstance(parent_item.node, doc_tree.List ):
+				# single line outputs are fine
+				pass
+			elif isinstance(parent_item.node, doc_tree.BlockContainer):
+				if not self.first_paragraph:	
+					self.output.write(f'\n')
+				self.first_paragraph = False
+			
+		self.has_line_end = False
 		return self._write_node( node )
 		
 	def exit( self, node : doc_tree.Node ) -> None:
 		back = self.stack.pop()
 		assert back.node == node
+		if isinstance(node, doc_tree.BlockNode):
+			if not self.has_line_end:
+				self.output.write('\n')
+			self.has_line_end = True
+			
 		self.output.end_context()
 
 		
@@ -90,15 +124,15 @@ class MdlWriter(render.Writer):
 		self._write_block_comment( node )
 		match node.class_:
 			case doc_tree.block_quote:
-				self.output.section('> ', '')
+				self.output.write('> ')
 			case doc_tree.block_blurb:
-				self.output.section('@Blurb\n','')
+				self.output.write('@Blurb\n')
 			case doc_tree.block_aside:
-				self.output.section('@Aside\n','')
+				self.output.write('@Aside\n')
 			case doc_tree.block_promote:
-				self.output.section('@Promote\n','')
+				self.output.write('@Promote\n')
 			case doc_tree.block_custom:
-				self.output.section('@Custom\n','')
+				self.output.write('@Custom\n')
 			case _:
 				raise Exception( "unknown-block-type", node.class_.name )
 			
@@ -125,9 +159,6 @@ class MdlWriter(render.Writer):
 
 	def _write_paragraph( self, node : doc_tree.Paragraph ) -> bool:
 		self._write_block_comment( node )
-		parent = self.stack[-2]
-		if (isinstance(parent.node,doc_tree.NodeContainer) and parent.node.len_sub() != 1) or not parent.is_flow:
-			self.output.section( '','\n\n' )
 		return True
 		
 	def _write_root_section( self, node: doc_tree.RootSection ) -> bool:
@@ -139,7 +170,7 @@ class MdlWriter(render.Writer):
 	def _write_section_title( self, node : doc_tree.SectionTitle ) -> bool:
 		parent = self.stack[-2].node
 		assert isinstance( parent, doc_tree.Section )
-		self.output.section( f'{"#" * parent.level} ', '\n\n' )
+		self.output.write( f'{"#" * parent.level} ' )
 		return True
 		
 	def _write_text( self, node : doc_tree.Text ) -> bool:
@@ -157,7 +188,7 @@ class MdlWriter(render.Writer):
 		return False
 		
 	def _write_note_defn( self, node: doc_tree.NoteDefn ) -> bool:
-		self.output.section( f'^{node.text} ', '\n')
+		self.output.write( f'^{node.text} ')
 		return True
 
 	def _write_notes( self ) -> None:
@@ -179,12 +210,11 @@ class MdlWriter(render.Writer):
 		return True
 
 	def _write_list( self, node : doc_tree.List ) -> bool:
-		self.output.section( '', '\n' )
 		return True
 		
 	def _write_list_item( self, node : doc_tree.ListItem ) -> bool:
 		self.stack[-1].is_flow = True
-		self.output.section( '- ', '\n' )
+		self.output.write( '- ' )
 		return True
 		
 	def _write_embed( self, node : doc_tree.Embed ) -> bool:

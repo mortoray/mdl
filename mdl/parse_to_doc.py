@@ -110,7 +110,7 @@ def _convert_blocks( ctx: _ConvertContext, nodes_iter: _NodeIterator ) -> List[d
 				
 		elif node.type == tree_parser.NodeType.container:
 			node = nodes_iter.next()
-			para = _convert_block( ctx, _NodeIterator([ node ]), None )
+			para = _convert_block( ctx, _NodeIterator([ node ]), prev_in_section )
 			append_block( para )
 			
 		elif node.type == tree_parser.NodeType.matter:
