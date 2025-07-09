@@ -38,13 +38,20 @@ class MdlWriter(render.Writer):
 		self.has_line_end = False
 		
 	def render(self, doc: document.Document ) -> str:
-		if len(doc.meta) > 0:
+		self._render_doc( doc, True )
+		return self.output.value
+		
+	def _render_doc( self, doc: document.Document, first: bool ) -> None:
+		if not first or len(doc.meta) > 0:
 			self.output.write("+++\n")
 			self.output.write(structure.dump_structure( doc.meta ))
 			self.output.write("+++\n\n")
 			
 		doc.root.visit( self )
-		return self.output.value
+		
+		for sub_doc in doc.sub:
+			self.output.write( "\n" )
+			self._render_doc(sub_doc, False )
 
 	def enter( self, node : doc_tree.Node ) -> bool:
 		self.output.open_context()
