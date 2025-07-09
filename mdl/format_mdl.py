@@ -36,7 +36,6 @@ class MdlWriter(render.Writer):
 		self.stack : typing.List[StackItem] = []
 		self.unsupported = False
 		self.has_line_end = False
-		self.first_paragraph = True
 		
 	def render(self, doc: document.Document ) -> str:
 		if len(doc.meta) > 0:
@@ -54,9 +53,13 @@ class MdlWriter(render.Writer):
 			parent_item = self.stack[-2]
 			parent_item.child_count += 1
 			
-			# this is the only thing that supports indented flow
-			if isinstance( parent_item.node, doc_tree.ListItem ):
-				if parent_item.child_count > 2:
+			if isinstance( parent_item.node, doc_tree.BlockContainer ) and \
+				not isinstance( parent_item.node, doc_tree.Section ) and \
+				not isinstance( parent_item.node, doc_tree.RootSection ):
+				if isinstance( parent_item.node, doc_tree.ListItem ):
+					if parent_item.child_count > 2:
+						self.output.write('\n')
+				elif parent_item.child_count > 1:
 					self.output.write('\n')
 				if parent_item.child_count > 1:
 					self.output.capture( indent_lines )
@@ -64,7 +67,7 @@ class MdlWriter(render.Writer):
 				# single line outputs are fine
 				pass
 			elif isinstance(parent_item.node, doc_tree.BlockContainer):
-				if not self.first_paragraph:	
+				if parent_item.child_count > 1:
 					self.output.write(f'\n')
 				self.first_paragraph = False
 			
@@ -188,7 +191,7 @@ class MdlWriter(render.Writer):
 		return True
 		
 	def _write_note( self, node : doc_tree.Note ) -> bool:
-		self.output.write( f"^{node.text} " )
+		self.output.write( f"^{node.text}" )
 		return False
 		
 	def _write_note_defn( self, node: doc_tree.NoteDefn ) -> bool:

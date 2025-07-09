@@ -86,6 +86,12 @@ def test_rewrite( fname: str ) -> None:
 		dup_doc = mdl.load_document( nm )
 		dup_dump = document.dump_document( dup_doc )
 		status( "MDL", orig_dump == dup_dump )
+		
+		if orig_dump != dup_dump:
+			save_to = '/tmp/' + os.path.basename(fname)
+			with open( save_to, 'w', encoding='utf-8' ) as out_file:
+				out_file.write( mdl_format )
+			print( "Bad MDL saved to: ", save_to )
 	
 		
 @dataclass
