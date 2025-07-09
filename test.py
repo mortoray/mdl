@@ -5,6 +5,7 @@ from typing import Callable, Any
 import os, sys
 from mdl import tree_parser, parse_to_doc, format_html, doc_process, document, parse_tree_dump, structure, format_mdl
 import mdl
+from dataclasses import dataclass
 from shelljob import fs #type: ignore
 
 bad_count = 0
@@ -54,7 +55,10 @@ def test_mdl( fname: str ) -> None:
 			
 		status( 'PreDoc', doc_dump == check_dump )
 		
-	check_directions( fname, base, parse_file=tp.parse_file )
+	directions = check_directions( fname, base, parse_file=tp.parse_file )
+	
+	if not directions.skip_doc:
+		test_rewrite( fname )
 			
 	html_name = base + '.html'
 	if os.path.exists( html_name ):
@@ -84,7 +88,10 @@ def test_rewrite( fname: str ) -> None:
 		status( "MDL", orig_dump == dup_dump )
 	
 		
-		
+@dataclass
+class Directions:
+	skip_doc: bool
+	
 def check_directions( 
 	fname: str, 
 	base : str,
@@ -94,9 +101,12 @@ def check_directions(
 	# Yaml was the historical name of these, kept to distinguish from .mcl in structures test
 	directions_name = base + '.yaml'
 	expect_fail = False
+	skip_doc = False
 	if os.path.exists( directions_name ):
 		test = structure.structure_load( directions_name )
 		fail_parse = test.get('fail-parse')
+		skip_doc = test.get('skip-doc', False)
+		assert isinstance(skip_doc, bool)
 		if fail_parse is not None:
 			expect_fail = True
 			try:
@@ -107,9 +117,10 @@ def check_directions(
 				if not okay:
 					print( e.code, '!=', fail_parse)
 			status( 'Fail-Parse', okay )
-			
-	if not expect_fail:
-		test_rewrite( fname )
+	
+	return Directions(
+		skip_doc=expect_fail or skip_doc
+	)
 
 			
 			

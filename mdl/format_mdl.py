@@ -109,6 +109,7 @@ class MdlWriter(render.Writer):
 			q( doc_tree.Section, self._write_section ) or \
 			q( doc_tree.SectionTitle, self._write_section_title ) or \
 			q( doc_tree.Text, self._write_text ) or \
+			q( doc_tree.Token, self._write_token ) or \
 			q( doc_tree.BlockMark, self._write_block_mark ) or \
 			fail()
 			
@@ -180,7 +181,10 @@ class MdlWriter(render.Writer):
 
 	def _write_link( self, node : doc_tree.Link ) -> bool:
 		# TODO: more escaping
-		self.output.section( '[', f']({node.url})' )
+		if node.note_id is not None:
+			self.output.section( '[', f'](^{node.note_id})' )
+		else:
+			self.output.section( '[', f']({node.url})' )
 		return True
 		
 	def _write_note( self, node : doc_tree.Note ) -> bool:
@@ -234,3 +238,10 @@ class MdlWriter(render.Writer):
 		else:
 			assert False
 		return True
+
+	def _write_token( self, node: doc_tree.Token ) -> bool:
+		self.output.write( "{" )
+		self.output.args( node.args )
+		self.output.write( "}" )
+		return False
+	
