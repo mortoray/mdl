@@ -12,6 +12,10 @@ class MdlFormatter(tree_formatter.TreeFormatter):
 		
 	def args( self, texts: list[str]) -> None:
 		self.write( " ".join( self.escape_arg(text) for text in texts ) )
+		
+	# TODO: Why are these args comma separated, should be space separated
+	def comma_args( self, texts: list[str]) -> None:
+		self.write( ",".join( self.escape_arg(text) for text in texts ) )
 	
 	def escape_arg( self, text: str )-> str:
 		# TODO: This escaping is not good enough
@@ -133,19 +137,30 @@ class MdlWriter(render.Writer):
 	
 	def _write_block( self, node : doc_tree.Block ) -> bool:
 		self._write_block_comment( node )
+		
+		def with_args( name: str ) -> None:
+			self.output.write( f'@{name}' )
+			args = node.args
+			if len(args)>0:
+				self.output.write( '(' )
+				self.output.comma_args( args )
+				self.output.write( ')' )
+			self.output.write( '\n' )
+			
 		match node.class_:
 			case doc_tree.block_quote:
 				self.output.write('> ')
 			case doc_tree.block_blurb:
-				self.output.write('@Blurb\n')
+				with_args( 'Blurb' )
 			case doc_tree.block_aside:
-				self.output.write('@Aside\n')
+				with_args( 'Aside' )
 			case doc_tree.block_promote:
-				self.output.write('@Promote\n')
+				with_args( 'Promote' )
 			case doc_tree.block_custom:
-				self.output.write('@Custom\n')
+				with_args( 'Custom' )
 			case _:
 				raise Exception( "unknown-block-type", node.class_.name )
+			
 			
 		return True
 		
