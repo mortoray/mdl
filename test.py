@@ -103,7 +103,7 @@ def check_directions(
 	base : str,
 	*,
 	parse_file: Callable[[str],Any]
-) -> None:
+) -> Directions:
 	# Yaml was the historical name of these, kept to distinguish from .mcl in structures test
 	directions_name = base + '.yaml'
 	expect_fail = False
@@ -111,8 +111,11 @@ def check_directions(
 	if os.path.exists( directions_name ):
 		test = structure.structure_load( directions_name )
 		fail_parse = test.get('fail-parse')
-		skip_doc = test.get('skip-doc', False)
-		assert isinstance(skip_doc, bool)
+		
+		is_skip_doc = test.get('skip-doc', False)
+		assert isinstance(is_skip_doc, bool)
+		skip_doc = is_skip_doc
+		
 		if fail_parse is not None:
 			expect_fail = True
 			try:

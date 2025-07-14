@@ -38,7 +38,6 @@ class MdlWriter(render.Writer):
 		super()
 		self.output = MdlFormatter()
 		self.stack : typing.List[StackItem] = []
-		self.unsupported = False
 		self.has_line_end = False
 		
 	def render(self, doc: document.Document ) -> str:
@@ -50,8 +49,9 @@ class MdlWriter(render.Writer):
 			self.output.write("+++\n")
 			self.output.write(structure.dump_structure( doc.meta ))
 			self.output.write("+++\n\n")
-			
-		doc.root.visit( self )
+		
+		if doc.root is not None:
+			doc.root.visit( self )
 		
 		for sub_doc in doc.sub:
 			self.output.write( "\n" )
@@ -130,10 +130,13 @@ class MdlWriter(render.Writer):
 		return result
 		
 	def _write_block_comment( self, node: doc_tree.Node ) -> None:
+		# IMPROVE: comments don't really work yet. It's not clear if they're meant to contain
+		# nodes or just text.
 		if node.comment is not None:
 			self.output.write( "/" )
-			self.Unsupported = True
-			#self._write_node( node.comment[0] )
+			for sub_node in node.comment:
+				sub_node.visit(self)
+		
 	
 	def _write_block( self, node : doc_tree.Block ) -> bool:
 		self._write_block_comment( node )
@@ -180,9 +183,6 @@ class MdlWriter(render.Writer):
 		self.output.section( fmt[0], fmt[1] )
 		return True
 
-	def _write_embed( self, node : doc_tree.Embed ) -> bool:
-		return True
-
 	def _write_paragraph( self, node : doc_tree.Paragraph ) -> bool:
 		self._write_block_comment( node )
 		return True
@@ -219,19 +219,6 @@ class MdlWriter(render.Writer):
 	def _write_note_defn( self, node: doc_tree.NoteDefn ) -> bool:
 		self.output.write( f'^{node.text} ')
 		return True
-
-	def _write_notes( self ) -> None:
-		if len(self.notes) == 0:
-			return
-			
-		self.output.write( '\n----\n\n' )
-		for index, note in enumerate(self.notes):
-			self.output.write( '{}. <a id="note-{}"></a>'.format(index+1, index+1) )
-			# TODO: This approach could be replaced with a separate visitor for formatting notes
-			writer = MarkdownWriter()
-			self.output.write( writer._render_node_children( note ) )
-			self.output.write("\n")
-			
 
 	def _write_code( self, node : doc_tree.Code ) -> bool:
 		# TODO: escape

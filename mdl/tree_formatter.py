@@ -16,7 +16,7 @@ class Context:
 		self.body = io.StringIO()
 		self.post : List[TFPair] = []
 		self.capture : Optional[TFCapture] = None
-		self.indent : str = None
+		self.indent : str | None = None
 		
 class TreeFormatter:
 	def __init__(self):

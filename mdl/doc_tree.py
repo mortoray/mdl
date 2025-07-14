@@ -84,7 +84,7 @@ class BlockNode(Node):
 		super().__init__()
 	
 class BlockContainer(NodeContainer[BlockNode], BlockNode):
-	def __init__(self, subs : typing.List[Block] = []):
+	def __init__(self, subs : typing.List[BlockNode] = []):
 		super().__init__()
 		self.add_subs( subs )
 
@@ -119,7 +119,7 @@ class Paragraph(ElementContainer, BlockNode):
 Leaf types may only inherit from Base node types. This prevents collision on simple visitors, as well as keeping the "is-a" relationships clean.
 """
 class Block(BlockContainer):
-	def __init__(self, class_ : BlockClass, subs = [], *, args = []):
+	def __init__(self, class_ : BlockClass, subs: list[BlockNode] = [], *, args: list[str] = []):
 		super().__init__( subs )
 		self._class_ = class_
 		self._args = args
@@ -129,7 +129,7 @@ class Block(BlockContainer):
 		return self._class_
 		
 	@property
-	def args(self) -> List:
+	def args(self) -> list[str]:
 		return self._args
 		
 		

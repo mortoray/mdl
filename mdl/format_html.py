@@ -219,7 +219,7 @@ class HtmlWriter(render.Writer):
 		assert isinstance(root_section, doc_tree.RootSection)
 		return root_section
 	
-	def _as_text( self, node: doc_tree.Node ) -> str:
+	def _as_text( self, node: doc_tree.NodeContainer ) -> str:
 		text = ""
 		for element in node.iter_sub():
 			if isinstance( element, doc_tree.Text ):
