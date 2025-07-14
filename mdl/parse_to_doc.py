@@ -136,6 +136,7 @@ def _convert_inlines( ctx: _ConvertContext, node: tree_parser.Node ):
 embed_map = {
 	'image': doc_tree.EmbedClass.image,
 	'abstract': doc_tree.EmbedClass.abstract,
+	'document': doc_tree.EmbedClass.document,
 }
 
 def _as_text( ctx, block : doc_tree.ElementContainer ) -> str:

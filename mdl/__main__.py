@@ -6,7 +6,7 @@ from typing import *
 import argparse, os, sys, codecs
 from importlib import resources
 
-from mdl import  format_html, format_markdown, render, structure, ParseException
+from mdl import  format_html, format_markdown, render, structure, ParseException, format_mdl
 from .document import load_document
 
 class Output(NamedTuple):
@@ -17,6 +17,7 @@ class Output(NamedTuple):
 writerMap = {
 	'HtmlWriter': format_html.HtmlWriter,
 	'MarkdownWriter': format_markdown.MarkdownWriter,
+	'MdlWriter': format_mdl.MdlWriter,
 }
 
 def load_format(ref: str) -> Dict:

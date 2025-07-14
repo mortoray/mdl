@@ -236,7 +236,8 @@ class MdlWriter(render.Writer):
 	def _write_embed( self, node : doc_tree.Embed ) -> bool:
 		name_map = {
 			doc_tree.EmbedClass.image: "image",
-			doc_tree.EmbedClass.abstract: "abgstract",
+			doc_tree.EmbedClass.abstract: "abstract",
+			doc_tree.EmbedClass.document: "document",
 		}
 		self.output.write( f"{{% {name_map[node.class_]} ")
 		self.output.args( [node.url, node.alt] )

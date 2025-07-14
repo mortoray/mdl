@@ -244,6 +244,7 @@ class Code(BlockNode):
 class EmbedClass(Enum):
 	image = 1
 	abstract = 2
+	document = 3
 	
 class Embed(BlockNode):
 	def __init__(self, class_ : EmbedClass, url : str ):

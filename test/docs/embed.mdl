@@ -1,0 +1,9 @@
+{% document code1 }
+
++++
+name: code1
++++
+
+```tsx
+const a = 123
+```
