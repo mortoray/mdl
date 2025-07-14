@@ -222,7 +222,7 @@ class MdlWriter(render.Writer):
 
 	def _write_code( self, node : doc_tree.Code ) -> bool:
 		# TODO: escape
-		self.output.write( f"```{node.class_}\n{node.text}\n```\n\n" )
+		self.output.write( f"```{node.class_}\n{node.text}\n```" )
 		return True
 
 	def _write_list( self, node : doc_tree.List ) -> bool:

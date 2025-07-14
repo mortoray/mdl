@@ -1,4 +1,4 @@
-from . import tree_parser, parse_to_doc, doc_process, doc_tree, doc_tree_dump, structure, parse_tree_dump
+from . import tree_parser, parse_to_doc, doc_tree, doc_tree_dump, structure, parse_tree_dump
 from typing import *
 
 class Document:
@@ -41,7 +41,6 @@ def load_document( path : str, *,
 	_write_predoc = None,
 	_dump_predoc = False,
 	_dump_doc = False,
-	_process = True
 	) -> Document:
 	
 	tp = tree_parser.TreeParser()
@@ -99,15 +98,6 @@ def load_document( path : str, *,
 	if _write_predoc:
 		with open( _write_predoc, 'w', encoding = 'utf-8' ) as out:
 			out.write( dump_document( doc ) )
-	
-	if _process:
-		doc_process.doc_process( root )
-		if _dump_doc:
-			print( dump_document( doc ) )
-
-		if _write_doc:
-			with open( _write_doc, 'w', encoding = 'utf-8' ) as out:
-				out.write( dump_document( doc ) )
 		
 	return doc
 	

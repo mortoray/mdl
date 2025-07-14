@@ -17,20 +17,7 @@ class VisitCallback(typing.Protocol):
 	@abc.abstractmethod
 	def exit(self, node : Node ) -> None:
 		raise NotImplementedError
-		
-		
-class StackVisitor:
-	def __init__(self, proc : typing.Callable[[Node,typing.List[Node]], bool]):
-		self.stack : typing.List[Node] = []
-		self.proc = proc
-		
-	def enter( self, node : Node ) -> bool:
-		self.stack.append( node )
-		return self.proc( node, self.stack )
-
-	def exit( self, node : Node ) -> None:
-		self.stack.pop()
-		
+	
 
 class Node(abc.ABC):
 	def __init__(self):

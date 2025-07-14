@@ -1,0 +1,12 @@
+Our first example:
+
+```tsx
+const a = 123
+```
+
+And next one:
+
+```py
+b = 'a'
+```
+

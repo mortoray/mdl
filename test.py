@@ -3,7 +3,7 @@
 """
 from typing import Callable, Any
 import os, sys
-from mdl import tree_parser, parse_to_doc, format_html, doc_process, document, parse_tree_dump, structure, format_mdl
+from mdl import tree_parser, parse_to_doc, format_html, document, parse_tree_dump, structure, format_mdl
 import mdl
 from dataclasses import dataclass
 from shelljob import fs #type: ignore
@@ -45,15 +45,6 @@ def test_mdl( fname: str ) -> None:
 			check_dump = check.read()
 			
 		status( 'Doc', doc_dump == check_dump )
-		
-	predoc_name = base + '.predoc'
-	if os.path.exists( predoc_name ):
-		doc = mdl.load_document( fname, _process = False )
-		doc_dump = document.dump_document( doc )
-		with open( predoc_name, 'r', encoding = 'utf-8' ) as check:
-			check_dump = check.read()
-			
-		status( 'PreDoc', doc_dump == check_dump )
 		
 	directions = check_directions( fname, base, parse_file=tp.parse_file )
 	

@@ -3,7 +3,6 @@ from . import (
 	tree_parser as tree_parser, 
 	parse_to_doc as parse_to_doc, 
 	format_html as format_html, 
-	doc_process as doc_process, 
 	document as document, 
 )
 
