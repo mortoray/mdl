@@ -19,6 +19,12 @@ class Document:
 				return sub
 		return None
 
+	def find_first_sub_index( self, match : Callable[['Document'],bool] ) -> int | None:
+		for index, sub in enumerate(self.sub):
+			if match( sub ):
+				return index
+		return None
+		
 def dump_document( doc : Document, *, _first = True ) -> str:
 	text = ''
 	if doc.meta:

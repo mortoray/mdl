@@ -12,11 +12,22 @@ from enum import Enum
 class VisitCallback(typing.Protocol):
 	@abc.abstractmethod
 	def enter(self, node : Node ) -> bool:
-		raise NotImplementedError
+		...
 		
 	@abc.abstractmethod
 	def exit(self, node : Node ) -> None:
-		raise NotImplementedError
+		...
+		
+		
+class TransformType(Enum):
+	retain = 1
+	replace = 2
+	delete = 3
+
+class TransformCallback(VisitCallback):
+	@abc.abstractmethod
+	def transform(self, node: Node ) -> tuple[TransformType, Node]:
+		...
 	
 
 class Node(abc.ABC):
@@ -31,10 +42,17 @@ class Node(abc.ABC):
 		
 	def visit_children( self, proc : VisitCallback ) -> None:
 		pass
+		
+	def transform( self, proc: TransformCallback ) -> None:
+		if proc.enter( self ):
+			self.transform_children( proc )
+		proc.exit( self )
+
+	def transform_children( self, proc : TransformCallback ) -> None:
+		pass
 
 		
-T = typing.TypeVar('T', bound = Node)
-class NodeContainer(typing.Generic[T]):
+class NodeContainer[T: Node]:
 	def __init__(self):
 		super().__init__()
 		self._sub : typing.List[T] = []
@@ -64,6 +82,25 @@ class NodeContainer(typing.Generic[T]):
 		assert isinstance(self, Node), self
 		for node in self._sub:
 			node.visit( proc )
+			
+	def transform_children( self, proc: TransformCallback ) -> None:
+		at = 0
+		while at < len(self._sub):
+			node = self._sub[at]
+			trans_type, new_node = proc.transform( node )
+			match trans_type:
+				case TransformType.retain:
+					node.transform( proc )
+					
+				case TransformType.replace:
+					# We have no way to verify the type matches T
+					self._sub[at] = new_node # type: ignore[assignment]
+					new_node.transform( proc )
+					
+				case TransformType.delete:
+					del self._sub[ at ]
+					
+			at += 1
 			
 
 class BlockNode(Node):
